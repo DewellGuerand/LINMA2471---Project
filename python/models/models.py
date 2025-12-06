@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 
+
 class OptimizationModel(ABC):
     def __init__(self, name, parameters):
         self.name = name
