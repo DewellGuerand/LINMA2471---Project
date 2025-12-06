@@ -2,9 +2,9 @@
 # Usage: from utils import my_nice_function
 
 from .utils import (
-    my_nice_function,
+    simplex_projection
 )
 
 __all__ = [
-    "my_nice_function",
+    "simplex_projection",
 ]
