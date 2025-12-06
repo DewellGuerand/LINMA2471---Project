@@ -12,10 +12,6 @@ class OptimizationModel(ABC):
         pass
 
     @abstractmethod
-    def is_feasible(self, sol):
-        pass
-
-    @abstractmethod
     def f(self, w):
         pass
 
