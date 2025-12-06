@@ -1,24 +1,18 @@
-#import "@preview/charged-ieee:0.1.4": ieee
+#import "lib/lib.typ": ieee
 
 #show: ieee.with(
-  title: [A Typesetting System to Untangle the Scientific Writing Process],
+  title: [Smooth and Nonsmooth Markowitz Portfolio Optimization],
   abstract: [
     The process of scientific writing is often tangled up with the intricacies of typesetting, leading to frustration and wasted time for researchers. In this paper, we introduce Typst, a new typesetting system designed specifically for scientific writing. Typst untangles the typesetting process, allowing researchers to compose papers faster. In a series of experiments we demonstrate that Typst offers several advantages, including faster document creation, simplified syntax, and increased ease-of-use.
   ],
   authors: (
     (
-      name: "Martin Haug",
-      department: [Co-Founder],
-      organization: [Typst GmbH],
-      location: [Berlin, Germany],
-      email: "haug@typst.app"
+      name: "Guerand Dewell",
+      
     ),
     (
-      name: "Laurenz Mädje",
-      department: [Co-Founder],
-      organization: [Typst GmbH],
-      location: [Berlin, Germany],
-      email: "maedje@typst.app"
+      name: "Lucas Ahou",
+   
     ),
   ),
   index-terms: ("Scientific writing", "Typesetting", "Document creation", "Syntax"),
@@ -34,17 +28,24 @@
 
 What is the aim of this work?
 
+In this project our goal is to decide how to allocates wealth among different assets in order to balance expedcted return and risk.
+
+
 What are the main results?
 
 This is a concise introduction to your work. See Section 3 for details.
 
 = Data
 
-How did you handle the raw data?
+*How did you handle the raw data?*
 
-How did you estimate $mu$ and $Sigma$?
+To manage the data, we imported the CSV file via Panda in order to convert it into a data frame. We then transformed the dataset so that each column corresponds to the closing price of stock X and the corresponding row corresponds to the date.
 
-A positive semi-definite covariance matrix would greatly improve the model. Why? Is it PSD? If not, can you make it naturally?
+*How did you estimate $mu$ and $Sigma$?*
+
+To estimate stock returns and the covariance matrix, we used the following formula : $r_t = log (C_t/C_(t-1))$ were $r_t$ correspond to the return at time $t$ and $C_t$ correspond to the close time at $t$.
+
+*A positive semi-definite covariance matrix would greatly improve the model. Why? Is it PSD? If not, can you make it naturally?* 
 
 = Smooth Model
 
