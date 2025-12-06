@@ -1,24 +1,13 @@
 #import "@preview/charged-ieee:0.1.4": ieee
 
 #show: ieee.with(
-  title: [A Typesetting System to Untangle the Scientific Writing Process],
-  abstract: [
-    The process of scientific writing is often tangled up with the intricacies of typesetting, leading to frustration and wasted time for researchers. In this paper, we introduce Typst, a new typesetting system designed specifically for scientific writing. Typst untangles the typesetting process, allowing researchers to compose papers faster. In a series of experiments we demonstrate that Typst offers several advantages, including faster document creation, simplified syntax, and increased ease-of-use.
-  ],
+  title: [#text("Smooth and Nonsmooth Markowitz Portfolio Optimization", size: 20pt)],
   authors: (
     (
-      name: "Martin Haug",
-      department: [Co-Founder],
-      organization: [Typst GmbH],
-      location: [Berlin, Germany],
-      email: "haug@typst.app"
+      name: "Lucas Ahou",
     ),
     (
-      name: "Laurenz Mädje",
-      department: [Co-Founder],
-      organization: [Typst GmbH],
-      location: [Berlin, Germany],
-      email: "maedje@typst.app"
+      name: "Guerand Dewell",
     ),
   ),
   index-terms: ("Scientific writing", "Typesetting", "Document creation", "Syntax"),
@@ -26,9 +15,6 @@
   figure-supplement: [Fig.],
 )
 
-
-
-#v(1em)
 
 = Introduction
 
@@ -48,11 +34,20 @@ A positive semi-definite covariance matrix would greatly improve the model. Why?
 
 = Smooth Model
 
-What does the model mean?
+// What does the model mean?
 
-How could you choose the parameter $lambda$? What does it mean to choose a smaller/larger value?
+// How could you choose the parameter $lambda$? What does it mean to choose a smaller/larger value?
 
-Is there any additional interesting information on the model?
+// Is there any additional interesting information on the model?
+
+// Is there any additional interesting information on the
+// model? Description of the methods
+// What do you need for each of them?
+// Compare the theory with some first numerical results.
+// What can be improved compared to the theory? Why?
+// Is it normal?
+
+
 
 == Model
 
