@@ -16,7 +16,7 @@
     ),
   ),
   index-terms: ("Scientific writing", "Typesetting", "Document creation", "Syntax"),
-  bibliography: bibliography("refs.bib"),
+  bibliography: bibliography("refs.yml"),
   figure-supplement: [Fig.],
 )
 
