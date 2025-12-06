@@ -11,10 +11,6 @@ class OptimizationModel(ABC):
     def f(self, w):
         pass
 
-    @abstractmethod
-    def f(self, w):
-        pass
-
 
 
 class SmoothMarkowitzModel(OptimizationModel):
