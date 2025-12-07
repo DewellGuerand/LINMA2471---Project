@@ -29,7 +29,7 @@ class DataProcessor:
         """Get list of all available stock names."""
         if self._raw_data is None:
             self.load_data()
-        return sorted(self._raw_data['Name'].unique().tolist())
+        return sorted(self._raw_data['Name'].unique().to_numpy())
     
     def get_prices(self, stocks=None, start_date=None, end_date=None):
         """Get closing prices for selected stocks.
@@ -140,7 +140,7 @@ class DataProcessor:
         return {
             'mu': mu,
             'sigma': sigma,
-            'stock_names': prices.columns.tolist(),
+            'stock_names': prices.columns.to_numpy(),
             'n_stocks': len(mu),
             'n_days': len(returns),
             'prices': prices,

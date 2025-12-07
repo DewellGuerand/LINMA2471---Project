@@ -39,6 +39,10 @@ class SmoothMarkowitzModel(OptimizationModel):
     def hessian(self, w):
         return self.sigma
     
+    def lipschitz_constant(self):
+        """Compute the Lipschitz constant of the gradient, which is the largest eigenvalue of Sigma."""
+        return np.linalg.norm(self.sigma, 2)
+    
 
 class NonSmoothMarkowitzModel(OptimizationModel):
     def __init__(self, parameters):
