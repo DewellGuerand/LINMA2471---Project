@@ -149,8 +149,7 @@ The smoothness constant of $f$ is needed for the _Projected Gradient Descent_ fo
 )
 
 === Projection on the simplex
-
-the projection on the simplex is used by every method presented in this report, except for the interior point method. Below, we derive the calculation of the projection on this set:
+The projection on the simplex is used by every method presented in this report, except for the interior point method. Below, we derive the calculation of the projection on this set:
 
 #figure(
   kind: "derivation",
