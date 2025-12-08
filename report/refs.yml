@@ -9,3 +9,10 @@ markowitz1952:
     volume: 7
     issue: 1
   page-range: 77-91
+
+
+kkt:
+  type: web
+  title: "Karush–Kuhn–Tucker conditions"
+  url: "https://en.wikipedia.org/wiki/Karush%E2%80%93Kuhn%E2%80%93Tucker_conditions"
+  access-date: 2025-12-08

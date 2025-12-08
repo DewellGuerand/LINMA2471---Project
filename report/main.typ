@@ -1,5 +1,5 @@
 #import "@preview/charged-ieee:0.1.4": ieee
-
+#import "components.typ": frame
 
 #set page(numbering: "– 1 of 1 –")
 
@@ -23,11 +23,15 @@
 // Page Configuration
 /////////////////////
 #set text(hyphenate: false)
+#set enum(numbering: "1.")
+
 
 //////////////////////
 // Math Configuration
 /////////////////////
+#set math.equation(supplement: [Eq.])
 #let nonumeq(eq) = math.equation(block: true, numbering: none, eq)
+
 
 = Introduction
 
@@ -84,15 +88,194 @@ The matrix $Sigma$ is the covariance matrix and $mu$ is the average vector of th
 Now that we have seen an overview of this model and explained its meaning, we will discuss some properties of this model.
 
 First of all, the most important aspect is that the model is convex. In fact, the objective function is a sum between a positive semi-definite quadratic form (first term) and a linear function in the variables (second term). A sum of two convex functions is convex, so the objective is convex. The feasible set is also convex. This can be easily checked with the following computations:
-\
-$-->$ Let $w, v in Delta = {w in RR^n: w_i >= 0, sum_(i=1)^(n) w_i = 1}$, $gamma in [0, 1]$ and $u := gamma w + (1 - gamma)v$
+#figure(
+  kind: "proof",
+  supplement: [Proof],
+  caption: [$Delta$ is convex],
+  frame([
+    Let $w, v in Delta = {w in RR^n: w_i >= 0, sum_(i=1)^(n) w_i = 1}$, $gamma in [0, 1]$ and $u := gamma w + (1 - gamma)v$ :
 
-1. $u_i = gamma w_i + (1 - gamma)v_i >= 0$ because $w_i, v_i, gamma, (1-gamma) >= 0 quad checkmark$
+    1. $u_i = gamma w_i + (1 - gamma)v_i >= 0$ because $w_i, v_i, gamma, (1-gamma) >= 0 quad checkmark$
 
-2. $sum_(i) u_i = sum_(i) gamma w_i + (1 - gamma)v_i = gamma sum_(i) w_i + (1-gamma) sum_(i) v_i = gamma + (1-gamma) = 1 quad checkmark$
+    2. $sum_(i) u_i = sum_(i) gamma w_i + (1 - gamma)v_i = gamma sum_(i) w_i + (1-gamma) sum_(i) v_i = gamma + (1-gamma) = 1 quad checkmark$
+    
+    Thus $u in Delta$ and $Delta$ is convex $square.filled$
+    ]
+  )
+)
 
-Thus $u in Delta$ and $Delta$ is convex $square.filled$\
-The reason why it is important
+
+
+The reason why it is important is that the local minima of a convex problem is also *global*. This will ensure that every method that we implement will converge towards a minimmum with the same objective value. It will thus not be necessary to compare the performance of the portfolio in terms of its returns. Another important aspect of convex problems is that it allows us to use strong properties of convergence for the different methods. 
+
+Regarding those results and the implementation of the methods, we need to discuss some key properties of this model. More precisely, we need to derive the gradient and the hessian of the objective function, its smoothness constant as well as the projection operator on the simplex
+
+=== Gradient and hessian of $f$
+We will simply derive the objective function $f$ with respect to $w$ to obtain the gradient:
+#nonumeq(
+  $
+    gradient f(w) = Sigma w - lambda mu
+  $
+)
+and a second time to get the hessian:
+#nonumeq(
+  $
+    gradient^2 f(w) = Sigma
+  $
+)
+
+Something to notice is that the computational complexity of a gradient evaluation is $cal(O)(n^2)$ because it is a matrix-vector multiplication. However, in the context of the _coordinate descent_ method, it is not needed to compute the whole gradient as we will see later.
+
+=== Smoothness constant
+The smoothness constant of $f$ is needed for the _Projected Gradient Descent_ for example to use a step size that gives us better guarantees of convergence. Here is the derivation of this constant:
+
+#figure(
+  kind: "derivation",
+  supplement: [Derivation],
+  caption: [Smoothness constant],
+  frame([
+    $forall w, v in RR^n$, we have:
+
+    #nonumeq($
+      ||gradient f(w) - gradient f(v)||_2 &= ||Sigma w - Sigma v||_2
+      <= ||Sigma|| dot ||w - v||_2\ 
+      &= |lambda_(max)(Sigma)| dot ||w - v||_2\
+      ==> L = |lambda_(max)(Sigma)| &= lambda_(max)(Sigma)
+    $)
+
+    where we used the fact that $Sigma$ is PSD to simplify the last expression.
+    ]
+  )
+)
+
+=== Projection on the simplex
+
+the projection on the simplex is used by every method presented in this report, except for the interior point method. Below, we derive the calculation of the projection on this set:
+
+#figure(
+  kind: "derivation",
+  supplement: [Derivation],
+  caption: [Projection operator on the simplex],
+  frame()[
+    We want to solve:
+
+    #nonumeq($
+      P_(Delta)(v) = arg min_(w in Delta) ||w - v||_(2)^(2)
+    $)
+
+    which can be formulated as a constrained quadratic minimization problem:
+
+    #nonumeq($min_(w in RR^n) & 1/2 ||w - v||_(2)^(2) quad "s.t." quad sum_(i=1)^(n) w_i = 1, w_i >= 0$)
+
+    We now define the Lagrangian of this problem as follows: 
+
+    #nonumeq($cal(L)(w, theta, alpha) = &1/2 sum_i (w_i - v_i)^2 - theta(sum_i w_i -1) \ &- sum_i alpha_i w_i$) 
+
+    where $theta in RR$ and $alpha in RR^n$ are the Lagrange multiplier associated with the equality and nonnegativity constraints respectively.
+
+    We now impose the KKT conditions @kkt:
+    
+    1. Stationarity:
+       #nonumeq(
+        $(partial cal(L))/(partial w_i) = w_i - v_i - theta - alpha_i = 0 => w_i = v_i + theta + alpha_i$
+       )
+    2. Primal feasibility:
+       #nonumeq(
+        $w_i >= 0,quad sum_(i=1)^(n) w_i = 1$
+       )
+
+    3. Dual feasibility: 
+       #nonumeq($alpha_i >= 0$)
+
+    4. Complementary slackness:
+       #nonumeq($w_i alpha_i = 0$)
+
+   and we now have to solve them. First, we notice that from the complementary slackness:
+
+   #nonumeq(
+    $
+      &"If" w_i > 0, "then" alpha_i = 0 => w_i = v_i + theta\
+      &"If" w_i = 0, "then" alpha_i >= 0 => v_i + theta <= 0
+    $
+   )
+
+   The second case shows that we do not violate any KKT conditions. We thus have:
+
+   #nonumeq(
+    $
+      w_i = max(v_i + theta, 0)
+    $
+   )
+
+   To determine $theta$, we use the equality constraint:
+
+   #nonumeq(
+    $
+      sum_i max(v_i + theta, 0) = 1
+    $
+   )
+
+   This sum can also be expressed in the following manner:
+
+   #nonumeq(
+    $
+      sum_(i: v_i + theta > 0) v_i + theta = 1
+    $
+   )
+
+   If we now define $k$ as the number of indices that satisfy $v_i + theta > 0$ and $v_((i))$ be the sorted components of $v$, we get:
+
+   #nonumeq(
+    $
+      sum_(i: v_i + theta > 0) v_i + theta = sum_(i = n - k + 1)^(n) v_((i)) + theta = sum_(i = n - k + 1)^(n) v_((i)) + k theta
+    $
+   )
+  ]
+)
+
+// Trick to number frame with the same previous number
+#counter(figure.where(kind: "derivation")).update(n => n - 1)
+
+#figure(
+  kind: "derivation",
+  supplement: [Derivation],
+  caption: [(cont.)],
+  frame()[
+    This gives us:
+    #nonumeq(
+      $
+        theta = (1 - sum_(i = n - k + 1)^(n) v_((i)))/(k)
+      $
+    )
+    
+    This $k$ also needs to satisfy: 
+    #nonumeq(
+      $
+        v_((n-k)) + theta <= 0 quad "and" quad v_((n-k+1)) + theta > 0
+      $
+    )
+
+    There is a unique $k$ that satisfies this relation which gives us the correct theta. 
+  ]
+)
+
+The number $k$--and thus the projection-- can be implemented more efficiently using this algorithmic approach:
+
+#figure(
+  kind: "algorithm",
+  supplement: [Algorithm],
+  caption: [Projection computation],
+  frame()[
+    *Input*: Vector $v$ to project\
+    *Output*: $P_(Delta)(v)$\
+    *Time complexity:* $cal(O)(n log n)$
+
+    1. Sort $v$ in descending order $=> u_1 >= u_2 >= dots >= u_n$ #v(.5em)
+    2. $k <-- max{j in {1, dots, n}: u_j + (1 - sum_(i = 1)^(j) u_j)/(j) > 0}$
+    3. $theta <-- 1/k (1 - sum_(i = 1)^(k) u_j)$
+    4. *return* $w$ with $w_i = max(v_i - theta, 0)$ 
+  ]
+)
 
 == Projected Gradient Descent
 
@@ -112,6 +295,7 @@ For example:
   caption: [Gradient Descent],
 )[
   #set align(left)
+  #set par(first-line-indent: 0em)
   #block(
     width: 100%,
     inset: 10pt,
