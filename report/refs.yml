@@ -1,0 +1,11 @@
+markowitz1952:
+  type: article
+  title: "Portfolio Selection"
+  author: ["Markowitz, Harry"]
+  date: 1952
+  parent:
+    type: periodical
+    title: "The Journal of Finance"
+    volume: 7
+    issue: 1
+  page-range: 77-91

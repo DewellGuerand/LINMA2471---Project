@@ -15,17 +15,13 @@
   figure-supplement: [Fig.],
 )
 
+#set text(hyphenate: false)
 
 = Introduction
 
-What is the aim of this work?
+Portfolio optimization is the core of modern quantitative finance. It helps investor solve the trade-off problem between maximizing expected returns from investments while managing risks. Originally, this problem was described as a smooth mean-variance problem introduced by Markowitz @markowitz1952. This problem minimizes the portfolio variance while targeting a certain expected return. This first problem, however, does not take _transaction cost_ into account, therefore leading to a second version of this problem integrating this in the objective. This new problem is more realistic, though it is now non-smooth. Because of this key difference between the two models, the suitable optimization methods will differ from one another. 
 
-In this project our goal is to decide how to allocates wealth among different assets in order to balance expedcted return and risk.
-
-
-What are the main results?
-
-This is a concise introduction to your work. See Section 3 for details.
+The aim of this report is thus to compare different methods for both models by analyzing the cost of the methods, their convergence--both empirically and using theoretical results--and their performance on historical data from the `S&P500`. 
 
 = Data
 
