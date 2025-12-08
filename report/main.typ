@@ -15,7 +15,15 @@
   figure-supplement: [Fig.],
 )
 
+//////////////////////
+// Text Configuration
+/////////////////////
 #set text(hyphenate: false)
+
+//////////////////////
+// Math Configuration
+/////////////////////
+#let nonumeq(eq) = math.equation(block: true, numbering: none, eq)
 
 = Introduction
 
@@ -25,15 +33,15 @@ The aim of this report is thus to compare different methods for both models by a
 
 = Data
 
-*How did you handle the raw data?*
+As said in the introduction, we will work on historical data sampled from the `S&P500` index. The dataset is described in a `.csv` file where we have access to the name of the different stocks, the date and the open, close and low/high prices at that date. We are actually only interested in the date, name and close prices in this dataset. In fact we are actually interested in finding the average return vector $mu$ and the corresponding covariance matrix of returns $Sigma$. The first step was to extract the close prices as a matrix where each row corresponds to a different date and each column corresponds to a different stock's name. We then had to compute the returns at each date. At a time $t$, the return $r_t$ is given by:
 
-To manage the data, we imported the CSV file via Panda in order to convert it into a data frame. We then transformed the dataset so that each column corresponds to the closing price of stock X and the corresponding row corresponds to the date.
 
-*How did you estimate $mu$ and $Sigma$?*
+#nonumeq($r_t = (p_t - p_(t-1))\/p_(t-1)$)
 
-To estimate stock returns and the covariance matrix, we used the following formula : $r_t = log (C_t/C_(t-1))$ were $r_t$ correspond to the return at time $t$ and $C_t$ correspond to the close time at $t$.
 
-*A positive semi-definite covariance matrix would greatly improve the model. Why? Is it PSD? If not, can you make it naturally?* 
+The return $mu$ is then simply given by the average of the returns with respect to time, for each assets. The covariance matrix $Sigma$ is also simply given by the covariance matrix of the return matrix. A strong property of (sample) covariance matrices is that they are always square, symmetric and positive semi-definite. This property is mandatory to be able to use strong theoretical results for convergence because it makes our objective function convex (quadratic function with PSD matrix).
+
+Another initiative we have taken into account when processing the dataset is the separation between a _train_ and _test_ dataset. This allows us to solve the models on the training dataset and evaluate the performance of the obtained portfolios on a test one. For this, we implemented a feature to split them based on a specified date. All the data before this date will be included in the training dataset and the remaining one will serve to evaluate the portfolio on "future" data. Along with that, we also included a feature to select only $n$ stocks within all the available stocks. This will allow us to compare computational costs of the diverse methods as the dimension of the variable increases. 
 
 = Smooth Model
 
