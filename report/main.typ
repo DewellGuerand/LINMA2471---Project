@@ -1,5 +1,8 @@
 #import "@preview/charged-ieee:0.1.4": ieee
 
+
+#set page(numbering: "– 1 of 1 –")
+
 #show: ieee.with(
   title: [#text("Smooth and Nonsmooth Markowitz Portfolio Optimization", size: 20pt)],
   authors: (
@@ -15,8 +18,9 @@
   figure-supplement: [Fig.],
 )
 
+
 //////////////////////
-// Text Configuration
+// Page Configuration
 /////////////////////
 #set text(hyphenate: false)
 
@@ -29,7 +33,7 @@
 
 Portfolio optimization is the core of modern quantitative finance. It helps investor solve the trade-off problem between maximizing expected returns from investments while managing risks. Originally, this problem was described as a smooth mean-variance problem introduced by Markowitz @markowitz1952. This problem minimizes the portfolio variance while targeting a certain expected return. This first problem, however, does not take _transaction cost_ into account, therefore leading to a second version of this problem integrating this in the objective. This new problem is more realistic, though it is now non-smooth. Because of this key difference between the two models, the suitable optimization methods will differ from one another. 
 
-The aim of this report is thus to compare different methods for both models by analyzing the cost of the methods, their convergence--both empirically and using theoretical results--and their performance on historical data from the `S&P500`. 
+The aim of this report is thus to compare different methods for both models by analyzing the computational cost of the methods and their convergence--both empirically and using theoretical results-- 
 
 = Data
 
@@ -41,7 +45,7 @@ As said in the introduction, we will work on historical data sampled from the `S
 
 The return $mu$ is then simply given by the average of the returns with respect to time, for each assets. The covariance matrix $Sigma$ is also simply given by the covariance matrix of the return matrix. A strong property of (sample) covariance matrices is that they are always square, symmetric and positive semi-definite. This property is mandatory to be able to use strong theoretical results for convergence because it makes our objective function convex (quadratic function with PSD matrix).
 
-Another initiative we have taken into account when processing the dataset is the separation between a _train_ and _test_ dataset. This allows us to solve the models on the training dataset and evaluate the performance of the obtained portfolios on a test one. For this, we implemented a feature to split them based on a specified date. All the data before this date will be included in the training dataset and the remaining one will serve to evaluate the portfolio on "future" data. Along with that, we also included a feature to select only $n$ stocks within all the available stocks. This will allow us to compare computational costs of the diverse methods as the dimension of the variable increases. 
+In our implementation, we also included a feature to select only $n$ stocks within all the available stocks. This will allow us to compare the computational costs of the diverse methods as the dimension of the variable increases. 
 
 = Smooth Model
 
@@ -58,9 +62,37 @@ Another initiative we have taken into account when processing the dataset is the
 // What can be improved compared to the theory? Why?
 // Is it normal?
 
-
+The first model we will study is the _Smooth Markowitz model_. In this section, we will first present the formulation of the model and the meaning of its constituting parts. We will then present the three methods we will implement to solve this problem and that we will analyze later.
 
 == Model
+
+The _Smooth Markowitz model_ is mean-variance problem that was introduced by Markowitz@markowitz1952 in 1952. It is defined as follows:
+
+$
+  min_(w in Delta) f(w) = 1/2 w^top Sigma w - lambda w^top mu
+$
+
+where $w in RR^n$, $Sigma in RR^n$ and $mu in RR^n$.\
+The vector of variables $w$ represents the _weights_ of our portfolio, i.e. the proportion of each assets that constitutes our portoflio. Because each component $w_i$ of $w$ represents a percentage of our portfolio, they must sum up to one in a realistic scenario. This is why we define the feasible set as the simplex:
+
+#nonumeq($Delta = {w in RR^n: w_i >= 0, bb(1)^top w = 1}$)
+
+The matrix $Sigma$ is the covariance matrix and $mu$ is the average vector of the returns available in the available dataset. Therefore, the model aims to do the following:
+1. The first term $1/2 w^top Sigma w$ represents the variance of the portfolio's return. Intuitively, we want to minimze it as this is a measure of risk. In fact, a highly variating portfolio return means we, a lot of time, will encounter negative results. Thus minimizing this term allows to have a more consistent portfolio.
+2. The second term $- lambda w^top mu$ is there to target a maximum average return, while still minimizing the variance with the presence of the first term. Without this second term, the solution for this problem will only try to create a consistent portfolio and will thus not make a lot of profit. The $lambda > 0$ constant is a hyperparameter which controls the risk. The bigger it is, the more the model will try to find a portfolio selection that maximizes the average return compared to minimizing the variance. Therefore, this parameter represents the risk we are willing to take before solving this problem. The greater it is, the higher the risk is.  
+
+Now that we have seen an overview of this model and explained its meaning, we will discuss some properties of this model.
+
+First of all, the most important aspect is that the model is convex. In fact, the objective function is a sum between a positive semi-definite quadratic form (first term) and a linear function in the variables (second term). A sum of two convex functions is convex, so the objective is convex. The feasible set is also convex. This can be easily checked with the following computations:
+\
+$-->$ Let $w, v in Delta = {w in RR^n: w_i >= 0, sum_(i=1)^(n) w_i = 1}$, $gamma in [0, 1]$ and $u := gamma w + (1 - gamma)v$
+
+1. $u_i = gamma w_i + (1 - gamma)v_i >= 0$ because $w_i, v_i, gamma, (1-gamma) >= 0 quad checkmark$
+
+2. $sum_(i) u_i = sum_(i) gamma w_i + (1 - gamma)v_i = gamma sum_(i) w_i + (1-gamma) sum_(i) v_i = gamma + (1-gamma) = 1 quad checkmark$
+
+Thus $u in Delta$ and $Delta$ is convex $square.filled$\
+The reason why it is important
 
 == Projected Gradient Descent
 
