@@ -74,7 +74,8 @@ The _Smooth Markowitz model_ is mean-variance problem that was introduced by Mar
 
 $
   min_(w in Delta) f(w) = 1/2 w^top Sigma w - lambda w^top mu
-$
+$ <eq1>
+
 
 where $w in RR^n$, $Sigma in RR^n$ and $mu in RR^n$.\
 The vector of variables $w$ represents the _weights_ of our portfolio, i.e. the proportion of each assets that constitutes our portoflio. Because each component $w_i$ of $w$ represents a percentage of our portfolio, they must sum up to one in a realistic scenario. This is why we define the feasible set as the simplex:
@@ -106,7 +107,7 @@ First of all, the most important aspect is that the model is convex. In fact, th
 
 
 
-The reason why it is important is that the local minima of a convex problem is also *global*. This will ensure that every method that we implement will converge towards a minimmum with the same objective value. It will thus not be necessary to compare the performance of the portfolio in terms of its returns. Another important aspect of convex problems is that it allows us to use strong properties of convergence for the different methods. 
+The reason why it is important is that the local minima of a convex problem is also *global*. This will ensure that every method that we implement will converge towards a minimum with the same objective value. It will thus not be necessary to compare the performance of the portfolio in terms of its returns. Another important aspect of convex problems is that it allows us to use strong properties of convergence for the different methods. 
 
 Regarding those results and the implementation of the methods, we need to discuss some key properties of this model. More precisely, we need to derive the gradient and the hessian of the objective function, its smoothness constant as well as the projection operator on the simplex
 
@@ -273,25 +274,40 @@ The number $k$--and thus the projection-- can be implemented more efficiently us
     2. $k <-- max{j in {1, dots, n}: u_j + (1 - sum_(i = 1)^(j) u_j)/(j) > 0}$
     3. $theta <-- 1/k (1 - sum_(i = 1)^(k) u_j)$
     4. *return* $w$ with $w_i = max(v_i - theta, 0)$ 
-  ]
-)
+  ],
+  
+) <AlgorithmeProjection>
 
 == Projected Gradient Descent
 
-Description of the methods
+Now we will describe our first optimization method: projected gradient descent. This method seeks to minimize a problem of the form: 
 
-What do you need for each of them?
+$ min_(x in Omega) f(x) $ <eq2>
 
-Compare the theory with some first numerical results.
+were $Omega$ is a nonempty, closed and convex set and $f$ is an L-smooth function on $Omega$. Here we are dealing with exactly the case mentioned, because as described previously, our problem is of the form @eq1.
 
-What can be improved compared to the theory? Why? Is it normal?
+Then given an approximation $x_k in Omega$ for a solution of our problem @eq2, the projected gradient method is defined as  : 
+#nonumeq($ x_(k+1) = P_(Omega) (x_k - 1/L gradient f(x_k)) 
+$ 
+)
+and in our case we can reformulate this as : 
+#nonumeq($ w_(k+1) = P_(Delta) (w_k - 1/L gradient f(w_k)) 
+$ 
+)
+for a initial approximation $w_k in Delta$. 
 
-For example:
+It is immediately apparent that all the previously calculated parameters are necessary for the projected gradient method, so we need : 
+- The initial point 
+- The projection 
+- The Gradient 
+- The Smoothness constant 
+
+Intuitively, after each gradient step, the iterate could leave the _simplex_ so we need to project it back into our set. The algorithm could be written as follow : 
 
 #figure(
   kind: "algorithm",
   supplement: [Algorithm],
-  caption: [Gradient Descent],
+  caption: [Projected Gradient Descent],
 )[
   #set align(left)
   #set par(first-line-indent: 0em)
@@ -300,25 +316,117 @@ For example:
     inset: 10pt,
     stroke: 0.5pt + black,
   )[
-    *Input:* step size $alpha > 0$ \
-    *Output:* approximate solution $x_N$
+    *Input:* $L , w_0 , Sigma, lambda ,mu$ \
+    *Output:* approximate solution $w_N$
     
     #v(0.5em)
     
     *for* $k = 0, 1, dots, N - 1$ *do* \
-    #h(2em) compute a gradient $g_k$ \
-    #h(2em) $x_(k+1) = x_k - alpha g_k$ \
+    #h(2em) $g_k = Sigma w_k - lambda mu$ \
+    #h(2em) $alpha = 1/L$ \
+    #h(2em) $w_(k+1) = P_Delta (w_k - alpha g_k)$ \
     *end for*
   ]
 ]
 
-I need a gradient and a step size for Algorithm 1 to work, so the gradient is $dots$ and a classical choice of step size is $dots$, so I need to compute $dots$.
+
+// Description of the methods
+
+// What do you need for each of them?
+
+// Compare the theory with some first numerical results.
+
+// What can be improved compared to the theory? Why? Is it normal?
+
+// For example:
+
+// #figure(
+//   kind: "algorithm",
+//   supplement: [Algorithm],
+//   caption: [Gradient Descent],
+// )[
+//   #set align(left)
+//   #set par(first-line-indent: 0em)
+//   #block(
+//     width: 100%,
+//     inset: 10pt,
+//     stroke: 0.5pt + black,
+//   )[
+//     *Input:* step size $alpha > 0$ \
+//     *Output:* approximate solution $x_N$
+    
+//     #v(0.5em)
+    
+//     *for* $k = 0, 1, dots, N - 1$ *do* \
+//     #h(2em) compute a gradient $g_k$ \
+//     #h(2em) $x_(k+1) = x_k - alpha g_k$ \
+//     *end for*
+//   ]
+// ]
+
+// I need a gradient and a step size for Algorithm 1 to work, so the gradient is $dots$ and a classical choice of step size is $dots$, so I need to compute $dots$.
 
 == Projected Gradient Descent with Momentum
 
-What is the momentum doing?
+Here we are going to slightly modify the previous algorithm by introducing the notion of momentum.
+In our previous algorithm, we were not using the previous information given by the gradient of the previous iterates, i.e ,$gradient f(w_(k-1)) , gradient f(w_(k-2)),...,gradient f(w_(0))$.Then by using the momentum variable
+#nonumeq($ m_(k+1) = beta m_k + (1 - beta ) gradient f(w_k), #h(2em) "with" m_0 = 0
+$)
+The projected momentum iterates becomes for an $w_k in Delta$ 
+#nonumeq(
+  $
+    w_(k+1) = P_Delta (w_k - gamma m_(k+1))
+  $
+)
+with $beta in [0,1]$
+
+A classical choice is $gamma = 1/L$ were $L$ is the smoothness constant of the objective.
+
+Momentum increases the influence of recent gradients while gradually forgetting older ones, which often accelerates convergence, especially in ill-conditioned problems.
+
+
+We then have the following algorithm : 
+
+
+
+#figure(
+  kind: "algorithm",
+  supplement: [Algorithm],
+  caption: [Projected Gradient Descent with Momentum],
+)[
+  #set align(left)
+  #set par(first-line-indent: 0em)
+  #block(
+    width: 100%,
+    inset: 10pt,
+    stroke: 0.5pt + black,
+  )[
+    *Input:* $L , w_0 , Sigma, lambda ,mu , beta$ \
+    *Output:* approximate solution $w_N$
+    
+    #v(0.5em)
+    $m_0 = 0$
+    \
+    *for* $k = 0, 1, dots, N - 1$ *do* \
+    #h(2em) $g_k = Sigma w_k - lambda mu$ \
+    #h(2em) $m_(k+1) = beta m_k + (1 -beta) g_k$ \
+    #h(2em) $gamma = 1/L$ \
+    #h(2em) $w_(k+1) = P_Delta (w_k - gamma m_(k+1))$ \
+    *end for*
+  ]
+]
+
+
+// What is the momentum doing?
 
 == Projected Randomized Coordinate Descent
+
+The projected gradient Coordinate descent is a slight variant of our Porjected gradient desent were we are going to choose randomely a direction of descent in order to reduce our computation complexity for large problem. 
+Considering $w_k in Delta$ it is then defined by : 
+#nonumeq($
+           w_(k+1) = P_Delta (w_k - alpha [gradient f(w_k)]_(i_k)) e_(i_k)
+         $)
+with  $i_k tilde cal(U){1,...,n}$
 
 Is it smart to make deterministic choices for the coordinates? Is the answer the same in theory and in practice? Discuss it.
 
