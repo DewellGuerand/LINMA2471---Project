@@ -280,29 +280,24 @@ The number $k$--and thus the projection-- can be implemented more efficiently us
 
 == Projected Gradient Descent
 
-Now we will describe our first optimization method: projected gradient descent. This method seeks to minimize a problem of the form: 
+Now we will describe our first optimization method: projected gradient descent.
 
-$ min_(x in Omega) f(x) $ <eq2>
-
-were $Omega$ is a nonempty, closed and convex set and $f$ is an L-smooth function on $Omega$. Here we are dealing with exactly the case mentioned, because as described previously, our problem is of the form @eq1.
-
-Then given an approximation $x_k in Omega$ for a solution of our problem @eq2, the projected gradient method is defined as  : 
-#nonumeq($ x_(k+1) = P_(Omega) (x_k - 1/L gradient f(x_k)) 
-$ 
-)
-and in our case we can reformulate this as : 
+Given an approximation $w_k in Delta$ for a solution of our problem, the projected gradient method is defined as  : 
 #nonumeq($ w_(k+1) = P_(Delta) (w_k - 1/L gradient f(w_k)) 
 $ 
 )
-for a initial approximation $w_k in Delta$. 
+
 
 It is immediately apparent that all the previously calculated parameters are necessary for the projected gradient method, so we need : 
-- The initial point 
 - The projection 
 - The Gradient 
 - The Smoothness constant 
 
-Intuitively, after each gradient step, the iterate could leave the _simplex_ so we need to project it back into our set. The algorithm could be written as follow : 
+Despite these parameters we still need to choose the initial iterate $w_0$
+
+If we want to desribe this method intuitively, we see that after each gradient step, the iterate could leave the _simplex_ so we need to project it back into our set. 
+
+A more detailed algorithm could be written as follow : 
 
 #figure(
   kind: "algorithm",
@@ -369,7 +364,7 @@ Intuitively, after each gradient step, the iterate could leave the _simplex_ so 
 == Projected Gradient Descent with Momentum
 
 Here we are going to slightly modify the previous algorithm by introducing the notion of momentum.
-In our previous algorithm, we were not using the previous information given by the gradient of the previous iterates, i.e ,$gradient f(w_(k-1)) , gradient f(w_(k-2)),...,gradient f(w_(0))$.Then by using the momentum variable
+In our previous algorithm, we were not taking advantage of the gradient of the previous iterates, i.e ,$gradient f(w_(k-1)) , gradient f(w_(k-2)),...,gradient f(w_(0))$. We could then introduce a momentum variable
 #nonumeq($ m_(k+1) = beta m_k + (1 - beta ) gradient f(w_k), #h(2em) "with" m_0 = 0
 $)
 The projected momentum iterates becomes for an $w_k in Delta$ 
@@ -385,7 +380,7 @@ A classical choice is $gamma = 1/L$ were $L$ is the smoothness constant of the o
 Momentum increases the influence of recent gradients while gradually forgetting older ones, which often accelerates convergence, especially in ill-conditioned problems.
 
 
-We then have the following algorithm : 
+The more detailed algorithm is described as follow : 
 
 
 
@@ -421,7 +416,7 @@ We then have the following algorithm :
 
 == Projected Randomized Coordinate Descent
 
-The projected gradient Coordinate descent is a slight variant of our Porjected gradient desent were we are going to choose randomely a direction of descent in order to reduce our computation complexity for large problem. 
+The projected gradient Coordinate descent is a slight variant of our Projected gradient desent were we are going to choose randomely a direction of descent in order to reduce our computation complexity for large problem. 
 Considering $w_k in Delta$ it is then defined by : 
 #nonumeq($
            w_(k+1) = P_Delta (w_k - alpha [gradient f(w_k)]_(i_k)) e_(i_k)

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from utils import simplex_projection
-
+import time 
 
 class PerformanceIndicator(ABC):
     @abstractmethod
@@ -25,6 +25,8 @@ class IteratePerformanceIndicator(PerformanceIndicator):
 
     def evaluate(self, w_new, w_old, model):
         return np.linalg.norm(w_new - w_old)
+    
+
 
 
 
@@ -70,20 +72,39 @@ class ProjectedGradientMethod(OptimizationMethod):
         self.step_size = parameters.get("step_size", 0.01)
         self.max_iter = parameters.get("max_iter", 1000)
         self.tol = parameters.get("tol", 1e-6)
+        self.metric = []
+        self.time = []
+        self.obj_value = []
 
     def optimize(self, model, w0):
+        # Reset history for each optimization run
+        self.metric = []
+        self.time = []
+        self.obj_value = []
         w_new = w0.copy()
+        self.obj_value.append(model.f(w_new))
+        
+        t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
             w_new = self.iterate(model, w_old)
+            self.obj_value.append(model.f(w_new))
+            
+            # Record cumulative time since start
+            self.time.append(time.time() - t_start)
 
+            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
+            self.metric.append(convergence_value)
             # Check convergence
-            if self.performance_indicator.evaluate(w_new, w_old, model) < self.tol:
+            if convergence_value < self.tol:
                 return {
                     "sol": w_new,
                     "value": model.f(w_new),
                     "iterations": iter + 1,
                     "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
                 }
 
         return {
@@ -91,6 +112,9 @@ class ProjectedGradientMethod(OptimizationMethod):
             "value": model.f(w_new),
             "iterations": self.max_iter,
             "converged": False,
+            "metric": self.metric,
+            "time": self.time,
+            "obj_value": self.obj_value,
         }
 
     def iterate(self, model, w):
@@ -107,21 +131,40 @@ class ProjectedGradientDescentMomentum(OptimizationMethod):
         self.max_iter = parameters.get("max_iter", 1000)
         self.tol = parameters.get("tol", 1e-6)
         self._velocity = None  # Store velocity for momentum
+        self.metric = []
+        self.time = []
+        self.obj_value = []
 
     def optimize(self, model, w0):
+        # Reset history for each optimization run
+        self.metric = []
+        self.time = []
+        self.obj_value = []
         w_new = w0.copy()
         self._velocity = np.zeros_like(w0)
+        self.obj_value.append(model.f(w_new))
         
+        t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
             w_new = self.iterate(model, w_old)
+            self.obj_value.append(model.f(w_new))
+            
+            # Record cumulative time since start
+            self.time.append(time.time() - t_start)
 
-            if self.performance_indicator.evaluate(w_new, w_old, model) < self.tol:
+            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
+            self.metric.append(convergence_value)
+            
+            if convergence_value < self.tol:
                 return {
                     "sol": w_new,
                     "value": model.f(w_new),
                     "iterations": iter + 1,
                     "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
                 }
 
         return {
@@ -129,6 +172,9 @@ class ProjectedGradientDescentMomentum(OptimizationMethod):
             "value": model.f(w_new),
             "iterations": self.max_iter,
             "converged": False,
+            "metric": self.metric,
+            "time": self.time,
+            "obj_value": self.obj_value,
         }
 
     def iterate(self, model, w):
@@ -146,20 +192,39 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
         self.step_size = parameters.get("step_size", 0.01)
         self.max_iter = parameters.get("max_iter", 1000)
         self.tol = parameters.get("tol", 1e-6)
+        self.metric = []
+        self.time = []
+        self.obj_value = []
 
     def optimize(self, model, w0):
+        # Reset history for each optimization run
+        self.metric = []
+        self.time = []
+        self.obj_value = []
         w_new = w0.copy()
+        self.obj_value.append(model.f(w_new))
         
+        t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
             w_new = self.iterate(model, w_old)
+            self.obj_value.append(model.f(w_new))
+            
+            # Record cumulative time since start
+            self.time.append(time.time() - t_start)
 
-            if self.performance_indicator.evaluate(w_new, w_old, model) < self.tol:
+            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
+            self.metric.append(convergence_value)
+            
+            if convergence_value < self.tol:
                 return {
                     "sol": w_new,
                     "value": model.f(w_new),
                     "iterations": iter + 1,
                     "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
                 }
 
         return {
@@ -167,6 +232,9 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
             "value": model.f(w_new),
             "iterations": self.max_iter,
             "converged": False,
+            "metric": self.metric,
+            "time": self.time,
+            "obj_value": self.obj_value,
         }
 
     def iterate(self, model, w):
@@ -198,15 +266,24 @@ class ProjectedSubgradientMethod(OptimizationMethod):
         self.tol = parameters.get("tol", 1e-6)
         self.step_size_rule = parameters.get("step_size_rule", "constant")  # "constant", "diminishing"
         self._iter_count = 0  # Track iteration for diminishing step size
+        self.metric = []
+        self.time = []
+        self.obj_value = []
 
     def optimize(self, model, w0):
+        # Reset history for each optimization run
+        self.metric = []
+        self.time = []
+        self.obj_value = []
         w_new = w0.copy()
         self._iter_count = 0
         
         # Track best solution (subgradient methods are not descent methods)
         best_w = w_new.copy()
         best_value = model.f(w_new)
+        self.obj_value.append(best_value)
         
+        t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
             self._iter_count = iter + 1
@@ -217,13 +294,24 @@ class ProjectedSubgradientMethod(OptimizationMethod):
             if current_value < best_value:
                 best_value = current_value
                 best_w = w_new.copy()
+            
+            self.obj_value.append(current_value)
+            
+            # Record cumulative time since start
+            self.time.append(time.time() - t_start)
 
-            if self.performance_indicator.evaluate(w_new, w_old, model) < self.tol:
+            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
+            self.metric.append(convergence_value)
+
+            if convergence_value < self.tol:
                 return {
                     "sol": best_w,
                     "value": best_value,
                     "iterations": iter + 1,
                     "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
                 }
 
         return {
@@ -231,6 +319,9 @@ class ProjectedSubgradientMethod(OptimizationMethod):
             "value": best_value,
             "iterations": self.max_iter,
             "converged": False,
+            "metric": self.metric,
+            "time": self.time,
+            "obj_value": self.obj_value,
         }
 
     def _get_step_size(self):
@@ -253,20 +344,39 @@ class ProximalGradientMethod(OptimizationMethod):
         self.step_size = parameters.get("step_size", 0.01)
         self.max_iter = parameters.get("max_iter", 1000)
         self.tol = parameters.get("tol", 1e-6)
+        self.metric = []
+        self.time = []
+        self.obj_value = []
 
     def optimize(self, model, w0):
+        # Reset history for each optimization run
+        self.metric = []
+        self.time = []
+        self.obj_value = []
         w_new = w0.copy()
+        self.obj_value.append(model.f(w_new))
         
+        t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
             w_new = self.iterate(model, w_old)
+            self.obj_value.append(model.f(w_new))
+            
+            # Record cumulative time since start
+            self.time.append(time.time() - t_start)
 
-            if self.performance_indicator.evaluate(w_new, w_old, model) < self.tol:
+            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
+            self.metric.append(convergence_value)
+            
+            if convergence_value < self.tol:
                 return {
                     "sol": w_new,
                     "value": model.f(w_new),
                     "iterations": iter + 1,
                     "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
                 }
 
         return {
@@ -274,6 +384,9 @@ class ProximalGradientMethod(OptimizationMethod):
             "value": model.f(w_new),
             "iterations": self.max_iter,
             "converged": False,
+            "metric": self.metric,
+            "time": self.time,
+            "obj_value": self.obj_value,
         }
 
     def iterate(self, model, w):
@@ -304,17 +417,27 @@ class InteriorPointMethod(OptimizationMethod):
         self.max_inner_iter = parameters.get("max_inner_iter", 50)
         self.tol = parameters.get("tol", 1e-6)
         self.inner_tol = parameters.get("inner_tol", 1e-8)
+        self.metric = []
+        self.time = []
+        self.obj_value = []
 
     def optimize(self, model, w0):
+        # Reset history for each optimization run
+        self.metric = []
+        self.time = []
+        self.obj_value = []
+        
         n = w0.shape[0]
         w_new = w0.copy()
         
         # Ensure initial point is strictly feasible (interior of simplex)
         w_new = np.clip(w_new, 1e-8, 1 - 1e-8)
         w_new = w_new / np.sum(w_new)
+        self.obj_value.append(model.f(w_new))
         
         mu = self.mu
         
+        t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
             
@@ -329,12 +452,23 @@ class InteriorPointMethod(OptimizationMethod):
             # Decrease barrier parameter
             mu = mu * self.mu_decay
             
-            if self.performance_indicator.evaluate(w_new, w_old, model) < self.tol:
+            self.obj_value.append(model.f(w_new))
+            
+            # Record cumulative time since start
+            self.time.append(time.time() - t_start)
+
+            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
+            self.metric.append(convergence_value)
+            
+            if convergence_value < self.tol:
                 return {
                     "sol": w_new,
                     "value": model.f(w_new),
                     "iterations": iter + 1,
                     "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
                 }
 
         return {
@@ -342,6 +476,9 @@ class InteriorPointMethod(OptimizationMethod):
             "value": model.f(w_new),
             "iterations": self.max_iter,
             "converged": False,
+            "metric": self.metric,
+            "time": self.time,
+            "obj_value": self.obj_value,
         }
 
     def _newton_step(self, model, w, mu, n):
