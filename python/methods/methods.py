@@ -133,7 +133,6 @@ class ExactLineSearchQuadratic(StepSizeStrategy):
         if grad_dot_grad < 1e-14:
             return 1.0 / model.lipschitz_constant()
         
-        # For quadratic: Hessian = Sigma
         Sigma_grad = model.sigma @ grad
         grad_dot_Sigma_grad = np.dot(grad, Sigma_grad)
         
@@ -542,6 +541,7 @@ class ProjectedSubgradientMethod(OptimizationMethod):
         return self.step_size
 
     def iterate(self, model, w):
+        # model.subgradient() returns the FULL subgradient (smooth + non-smooth parts)
         subgrad = model.subgradient(w)
         step = self._get_step_size()
         w_new = w - step * subgrad
