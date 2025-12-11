@@ -407,7 +407,7 @@ So our convergence rate is $cal(O)(1\/k^2)$, which is faster than gradient desce
 
 == Projected Randomized Coordinate Descent
 
-The projected gradient Coordinate descent is a slight variant of the projected gradient descent method were we are going to choose randomely a direction of descent in order to reduce our computation complexity for large problems. 
+The projected gradient Coordinate descent is a slight variant of the projected gradient descent method where we are going to choose randomly a direction of descent in order to reduce our computation complexity for large problems. 
 Considering $w_k in Delta$ it is then defined by : 
 #nonumeq($
            w_(k+1) = P_Delta (w_k - alpha [gradient f(w_k)]_(i_k)) e_(i_k)
@@ -434,9 +434,9 @@ In @eq:nonsmooth, we observe that the objective takes the same form as in @eq:sm
   $
 )
 
-This essentially mean that we do not want to drastically change the current allocation of our portoflio. In fact, the $cal(l)_1$-norm encourages _sparse rebalancing_. The parameter $c$ controls the trading cost. A small $c$ implies that the portfolio can change drastically compared to a reference one and vice-versa.
+This essentially means that we do not want to drastically change the current allocation of our portoflio. In fact, the $cal(l)_1$-norm encourages _sparse rebalancing_. The parameter $c$ controls the trading cost. A small $c$ implies that the portfolio can change drastically compared to a reference one and vice-versa.
 
-The main difference with the smooth model is that we can not compute the gradient explicitly. Instead, we will have to use methods that either use a subgradient, or other techniques.
+The main difference with the smooth model is that we can not compute the gradient explicitly. Instead, we will have to use methods that either use a subgradient, or other optimization techniques.
 
 In the next sections, we will present the three methods we will implement on this model, that is: projected subgradient method, proximal gradient descent and interior point method.
 
