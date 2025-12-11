@@ -2,6 +2,13 @@
 # Usage: from methods import ProjectedGradientMethod
 
 from .methods import (
+    # Step size strategies
+    StepSizeStrategy,
+    ConstantStepSize,
+    BacktrackingLineSearch,
+    BarzilaiBorweinStepSize,
+    ExactLineSearchQuadratic,
+    # Performance indicators
     PerformanceIndicator,
     ValuePerformanceIndicator,
     IteratePerformanceIndicator,
@@ -15,6 +22,13 @@ from .methods import (
 )
 
 __all__ = [
+    # Step size strategies
+    "StepSizeStrategy",
+    "ConstantStepSize",
+    "BacktrackingLineSearch",
+    "BarzilaiBorweinStepSize",
+    "ExactLineSearchQuadratic",
+    # Performance indicators and methods
     "PerformanceIndicator",
     "ValuePerformanceIndicator",
     "IteratePerformanceIndicator",

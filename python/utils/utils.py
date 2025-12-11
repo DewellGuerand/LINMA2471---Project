@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 def simplex_projection(v):
     r"""Compute the projection of `v` on the simplex.
@@ -17,3 +18,213 @@ def simplex_projection(v):
     theta = cssv[cond][-1] / rho
     w = np.maximum(v + theta, 0)
     return w
+
+def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2})$' ):
+    """
+    Plot convergence analysis with 3 separate figures.
+    
+    Args:
+        result: dict with 'metric', 'time', 'obj_value' keys
+        theoretical_rate_exp: exponent for theoretical rate (e.g., -0.5 for O(k^{-1/2}), -1 for O(1/k))
+        rate_label: label for the theoretical rate in the legend
+    """
+    iterations = np.arange(1, len(result['metric']) + 1, dtype=float)
+    metric = np.array(result['metric'])
+    obj_values = np.array(result['obj_value'])
+    time_values = np.array(result['time'])
+    
+    time_per_iter = np.diff(np.concatenate([[0], time_values])) * 1000  # Convert to ms
+
+    plt.figure(figsize=(8, 5))
+    plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$\|x_{k+1} - x_k\|$ (empirical)')
+    
+   
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel('Convergence metric', fontsize=12)
+    plt.title(f'Convergence rate', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(8, 5))
+    f_star = obj_values[-1]  # Approximate f* with final value
+    obj_gap = obj_values[:-1] - f_star  # Remove last element (it's 0)
+    iterations_obj = np.arange(1, len(obj_gap) + 1, dtype=float)
+    
+    plt.loglog(iterations_obj, obj_gap, 'b-', linewidth=1.5, label=r'$f(x_k) - f^*$ (empirical)')
+    
+   
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$f(x_k) - f^*$', fontsize=12)
+    plt.title('Objective value convergence', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(iterations, time_per_iter, 'g-', linewidth=0.8, alpha=0.5, label='Per iteration')
+    
+    # Add moving average for smoothing
+    window = min(20, len(time_per_iter) // 5) if len(time_per_iter) > 5 else 1
+    if window > 1:
+        moving_avg = np.convolve(time_per_iter, np.ones(window)/window, mode='valid')
+        plt.plot(iterations[window-1:], moving_avg, 'r-', linewidth=2, label=f'Moving avg (window={window})')
+    plt.axhline(y=np.mean(time_per_iter), color='k', linestyle='--', linewidth=1.5, label=f'Mean: {np.mean(time_per_iter):.3f} ms')
+    
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel('Time per iteration (ms)', fontsize=12)
+    plt.title('Computational cost per iteration', fontsize=13)
+    plt.legend(fontsize=9)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.show()
+
+    # Summary stats
+    print(f"Total time: {result['time'][-1]:.4f} seconds")
+    print(f"Total iterations: {len(result['metric'])}")
+    print(f"Final objective value: {obj_values[-1]:.6f}")
+    print(f"Average time per iteration: {np.mean(time_per_iter):.4f} ms")
+    print(f"Std time per iteration: {np.std(time_per_iter):.4f} ms")
+
+
+
+
+def plot_iterations_vs_tolerance(result, theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$'):
+    """
+    Plot the number of iterations needed to reach a given tolerance epsilon.
+    
+    This verifies the theoretical complexity bound (e.g., O(epsilon^{-2}) for projected gradient).
+    
+    Args:
+        result: dict with 'metric' key containing convergence values at each iteration
+        theoretical_exp: exponent for theoretical complexity (e.g., 2 for O(epsilon^{-2}))
+        rate_label: label for the theoretical rate in the legend
+    """
+    metric = np.array(result['metric'])
+    
+    # Generate epsilon values from max to min of the metric
+    eps_min = metric[-1] if metric[-1] > 0 else metric[metric > 0][-1]
+    eps_max = metric[0]
+    epsilons = np.logspace(np.log10(eps_max), np.log10(eps_min), 100)
+    
+    # Find number of iterations needed to reach each epsilon
+    iters_needed = []
+    valid_epsilons = []
+    
+    for eps in epsilons:
+        idx = np.where(metric <= eps)[0]
+        if len(idx) > 0:
+            iters_needed.append(idx[0] + 1)  # +1 because iterations are 1-indexed
+            valid_epsilons.append(eps)
+    
+    iters_needed = np.array(iters_needed)
+    valid_epsilons = np.array(valid_epsilons)
+    
+    if len(iters_needed) == 0:
+        print("No valid data points to plot.")
+        return
+    
+    # Plot iterations vs epsilon
+    plt.figure(figsize=(8, 5))
+    plt.loglog(valid_epsilons, iters_needed, 'b-', linewidth=1.5, label='Empirical')
+    
+    C = iters_needed[0] * (valid_epsilons[0] ** theoretical_exp)
+    theoretical_iters = C * (valid_epsilons ** (-theoretical_exp))
+    plt.loglog(valid_epsilons, theoretical_iters, 'r--', linewidth=2, label=f'{rate_label} (theoretical)')
+    
+    plt.xlabel(r'Tolerance $\epsilon$', fontsize=12)
+    plt.ylabel(r'Iterations $K$ to reach $\|x_{k+1} - x_k\| \leq \epsilon$', fontsize=12)
+    plt.title(f'Iteration Complexity: {rate_label}', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.gca().invert_xaxis()  # Smaller epsilon on the right
+    plt.tight_layout()
+    plt.show()
+    
+
+def compare_methods(results_dict):
+    """
+    Compare multiple optimization methods on 4 different plots.
+    
+    Args:
+        results_dict: dict of {method_name: result_dict}
+            Each result_dict should have keys: 'metric', 'time', 'obj_value'
+    
+    Example:
+        compare_methods({
+            'Projected GD': result_ProjectedGradientMethod,
+            'PGD + Momentum': result_ProjectedGradientDescentMomentum,
+            'Randomized CD': result_ProjectedRandomizedCoordinateDescent,
+        })
+    """
+    colors = ['b', 'r', 'g', 'orange', 'purple', 'brown', 'pink']
+    linestyles = ['-', '--', '-.', ':', '-', '--', '-.']
+    
+    plt.figure(figsize=(10, 6))
+    for i, (name, result) in enumerate(results_dict.items()):
+        iterations = np.arange(1, len(result['metric']) + 1, dtype=float)
+        metric = np.array(result['metric'])
+        plt.loglog(iterations, metric, color=colors[i % len(colors)], 
+                   linestyle=linestyles[i % len(linestyles)], linewidth=1.5, label=name)
+    
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$\|x_{k+1} - x_k\|$', fontsize=12)
+    plt.title('Convergence Metric Comparison', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.tight_layout()
+    plt.show()
+    
+    plt.figure(figsize=(10, 6))
+    
+    # Find global f* (minimum across all methods)
+    all_final_values = [np.array(result['obj_value'])[-1] for result in results_dict.values()]
+    f_star_global = min(all_final_values)
+    
+    for i, (name, result) in enumerate(results_dict.items()):
+        obj_values = np.array(result['obj_value'])
+        obj_gap = obj_values - f_star_global
+        # Remove zeros or negative values for log plot
+        iterations_obj = np.arange(1, len(obj_gap) + 1, dtype=float)
+        plt.loglog(iterations_obj, obj_gap, color=colors[i % len(colors)], 
+                   linestyle=linestyles[i % len(linestyles)], linewidth=1.5, label=name)
+    
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$f(x_k) - f^*$', fontsize=12)
+    plt.title('Objective Value Convergence Comparison', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.tight_layout()
+    plt.show()
+    
+    plt.figure(figsize=(10, 6))
+    
+    method_names = []
+    mean_times = []
+    std_times = []
+    
+    for name, result in results_dict.items():
+        time_values = np.array(result['time'])
+        time_per_iter = np.diff(np.concatenate([[0], time_values])) * 1000  # ms
+        method_names.append(name)
+        mean_times.append(np.mean(time_per_iter))
+        std_times.append(np.std(time_per_iter))
+    
+    x_pos = np.arange(len(method_names))
+    bars = plt.bar(x_pos, mean_times, yerr=std_times, capsize=5, 
+                   color=[colors[i % len(colors)] for i in range(len(method_names))], alpha=0.7)
+    plt.xticks(x_pos, method_names, rotation=15, ha='right')
+    plt.ylabel('Time per iteration (ms)', fontsize=12)
+    plt.title('Computational Cost per Iteration', fontsize=13)
+    plt.grid(True, alpha=0.3, axis='y')
+    plt.tight_layout()
+    plt.show()
+    
+
+
+
+    
+    
+    
