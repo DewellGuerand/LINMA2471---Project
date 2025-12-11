@@ -74,7 +74,7 @@ The _Smooth Markowitz model_ is mean-variance problem that was introduced by Mar
 
 $
   min_(w in Delta) f(w) = 1/2 w^top Sigma w - lambda w^top mu
-$ <eq1>
+$ <eq:smooth>
 
 
 where $w in RR^n$, $Sigma in RR^n$ and $mu in RR^n$.\
@@ -420,7 +420,25 @@ Is it smart to make deterministic choices for the coordinates? Is the answer the
 
 == Model
 
-Key differences with the smooth case. What fundamental changes are you expecting? Do you verify them?
+The second model we will study is a variant of the first one. Its formulation is given by:
+
+$
+  min_(w in Delta) f(w) = 1/2 w^top Sigma w - lambda w^top mu + c||w - w_"prev"||_1
+$<eq:nonsmooth>
+
+In @eq:nonsmooth, we observe that the objective takes the same form as in @eq:smooth. However, there is an additional non-smooth term. This term extends the previous model by taking transaction costs into account. In realistic scenarios, buying or selling assets implies a cost which is proportional to the amount of traded assets. To represent this in the model, we add a term proportional to the $cal(l)_1$-distance between the current portfolio ($w$) and a reference one ($w_"prev"$):
+
+#nonumeq(
+  $
+    c||w - w_"prev"||_1
+  $
+)
+
+This essentially mean that we do not want to drastically change the current allocation of our portoflio. In fact, the $cal(l)_1$-norm encourages _sparse rebalancing_. The parameter $c$ controls the trading cost. A small $c$ implies that the portfolio can change drastically compared to a reference one and vice-versa.
+
+The main difference with the smooth model is that we can not compute the gradient explicitly. Instead, we will have to use methods that either use a subgradient, or other techniques.
+
+In the next sections, we will present the three methods we will implement on this model, that is: projected subgradient method, proximal gradient descent and interior point method.
 
 == Projected Subgradient Method
 
