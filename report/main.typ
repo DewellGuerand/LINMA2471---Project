@@ -259,7 +259,7 @@ The projection on the simplex is used by every method presented in this report, 
   ]
 )
 
-The number $k$--and thus the projection-- can be implemented more efficiently using this algorithmic approach:
+The number $k$--and thus the projection--can be implemented more efficiently using this algorithmic approach:
 
 #figure(
   kind: "algorithm",
@@ -280,86 +280,50 @@ The number $k$--and thus the projection-- can be implemented more efficiently us
 
 == Projected Gradient Descent
 
-Now we will describe our first optimization method: projected gradient descent.
+We will now describe the first optimization method we will implemented for this model: the Projected Gradient Descent.\
+Given a point $w in Delta$, the idea is simply to perform a gradient descent step: 
+#nonumeq($z = w - alpha gradient f(w)$)
 
-Given an approximation $w_k in Delta$ for a solution of our problem, the projected gradient method is defined as  : 
-#nonumeq($ w_(k+1) = P_(Delta) (w_k - 1/L gradient f(w_k)) 
-$ 
-)
+where $alpha > 0$ is our step size. However, it is clear that there is no guarantee that this new point $z$ stays in the simplex after the step. We therefore will simply project this point on the simplex using @AlgorithmeProjection:
 
-
-It is immediately apparent that all the previously calculated parameters are necessary for the projected gradient method, so we need : 
-- The projection 
-- The Gradient 
-- The Smoothness constant 
-
-Despite these parameters we still need to choose the initial iterate $w_0$
-
-If we want to desribe this method intuitively, we see that after each gradient step, the iterate could leave the _simplex_ so we need to project it back into our set. 
-
-A more detailed algorithm could be written as follow : 
+#nonumeq($w^+ = P_(Delta)(z) = P_(Delta)(w - alpha gradient f(w))$)
+The algorithm is described as follows: 
 
 #figure(
   kind: "algorithm",
   supplement: [Algorithm],
   caption: [Projected Gradient Descent],
-)[
-  #set align(left)
-  #set par(first-line-indent: 0em)
-  #block(
-    width: 100%,
-    inset: 10pt,
-    stroke: 0.5pt + black,
-  )[
-    *Input:* $L , w_0 , Sigma, lambda ,mu$ \
-    *Output:* approximate solution $w_N$
-    
-    #v(0.5em)
-    
-    *for* $k = 0, 1, dots, N - 1$ *do* \
-    #h(2em) $g_k = Sigma w_k - lambda mu$ \
-    #h(2em) $alpha = 1/L$ \
-    #h(2em) $w_(k+1) = P_Delta (w_k - alpha g_k)$ \
-    *end for*
+  frame()[
+      *Input:* $w_0, alpha > 0$ \
+      *Output:* approximate solution $w_N$
+      
+      #v(0.5em)
+      
+      *for* $k = 0, 1, dots, N - 1$ *do* \
+      #h(2em) $g_k <-- gradient f(w_k)$ \
+      #h(2em) $w_(k+1) <-- P_Delta (w_k - alpha g_k)$ \
+      *end for*
   ]
-]
+)
 
+Here--as well as for the other methods--multiple stopping criterion can be used. We can either, as described above, stop after a certain number of iterations, or we could stop after reaching a certain precision (either on the objective value as well as the iterates values). Altough we do not have theoretical results that can improve the convergence of the method, we have actually a lower-bound on the number of iterations to reach a certain precisioon if we take the right step-size. In fact, here we have a smooth objective function $f$ with a smoothness constant $L = lambda_(max)(Sigma)$. In this case , we can take the step size to be:
 
-// Description of the methods
+#nonumeq(
+  $
+    alpha = 1/L
+  $
+)
 
-// What do you need for each of them?
+With this, we have that, to have $L(x_k - x_(k+1)) <= epsilon$, the number of iterations satisfy:
 
-// Compare the theory with some first numerical results.
+#nonumeq(
+  $
+    K >= (2L (f(x_0) - f(x^star)))/(epsilon^2)
+  $
+)
 
-// What can be improved compared to the theory? Why? Is it normal?
+Hence, our method has a convergence of $cal(O)(epsilon^(-2))$ in our case with the right step-size.
 
-// For example:
-
-// #figure(
-//   kind: "algorithm",
-//   supplement: [Algorithm],
-//   caption: [Gradient Descent],
-// )[
-//   #set align(left)
-//   #set par(first-line-indent: 0em)
-//   #block(
-//     width: 100%,
-//     inset: 10pt,
-//     stroke: 0.5pt + black,
-//   )[
-//     *Input:* step size $alpha > 0$ \
-//     *Output:* approximate solution $x_N$
-    
-//     #v(0.5em)
-    
-//     *for* $k = 0, 1, dots, N - 1$ *do* \
-//     #h(2em) compute a gradient $g_k$ \
-//     #h(2em) $x_(k+1) = x_k - alpha g_k$ \
-//     *end for*
-//   ]
-// ]
-
-// I need a gradient and a step size for Algorithm 1 to work, so the gradient is $dots$ and a classical choice of step size is $dots$, so I need to compute $dots$.
 
 == Projected Gradient Descent with Momentum
 
