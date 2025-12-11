@@ -306,7 +306,7 @@ The algorithm is described as follows:
   ]
 )
 
-Here--as well as for the other methods--multiple stopping criterion can be used. We can either, as described above, stop after a certain number of iterations, or we could stop after reaching a certain precision (either on the objective value as well as the iterates values). Altough we do not have theoretical results that can improve the convergence of the method, we have actually a lower-bound on the number of iterations to reach a certain precisioon if we take the right step-size. In fact, here we have a smooth objective function $f$ with a smoothness constant $L = lambda_(max)(Sigma)$. In this case , we can take the step size to be:
+Here--as well as for the other methods--multiple stopping criterion can be used. We can either, as described above, stop after a certain number of iterations, or we could stop after reaching a certain precision (either on the objective value as well as the iterates values). Altough we do not have theoretical results that can improve the convergence of the method, we have actually a lower-bound on the number of iterations to reach a certain precision if we take the right step-size. In fact, here we have a smooth objective function $f$ with a smoothness constant $L = lambda_(max)(Sigma)$. In this case , we can take the step size to be:
 
 #nonumeq(
   $
@@ -314,21 +314,21 @@ Here--as well as for the other methods--multiple stopping criterion can be used.
   $
 )
 
-With this, we have that, to have $L(x_k - x_(k+1)) <= epsilon$, the number of iterations satisfy:
+Knowing that our function is also convex, we have the following convergence result:
 
 #nonumeq(
   $
-    K >= (2L (f(x_0) - f(x^star)))/(epsilon^2)
+    f(w_k) - f(w_0) <= (L ||w_0 - w^star||^2)/(2k), quad forall k >= 1
   $
 )
 
-Hence, our method has a convergence of $cal(O)(epsilon^(-2))$ in our case with the right step-size.
+Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $cal(O)(1\/epsilon)$ to reach an $epsilon$-accuracy for the objective value.
 
 
 == Projected Gradient Descent with Momentum
 
 Here we are going to slightly modify the previous algorithm by introducing the notion of momentum.
-In our previous algorithm, we were not taking advantage of the gradient of the previous iterates, i.e ,$gradient f(w_(k-1)) , gradient f(w_(k-2)),...,gradient f(w_(0))$. We could then introduce a momentum variable
+In our previous algorithm, we were not taking advantage of the gradient of the previous iterates, i.e. $gradient f(w_(k-1)) , gradient f(w_(k-2)),...,gradient f(w_(0))$. We could then introduce a momentum variable
 #nonumeq($ m_(k+1) = beta m_k + (1 - beta ) gradient f(w_k), #h(2em) "with" m_0 = 0
 $)
 The projected momentum iterates becomes for an $w_k in Delta$ 
@@ -339,14 +339,8 @@ The projected momentum iterates becomes for an $w_k in Delta$
 )
 with $beta in [0,1]$
 
-A classical choice is $gamma = 1/L$ were $L$ is the smoothness constant of the objective.
-
-Momentum increases the influence of recent gradients while gradually forgetting older ones, which often accelerates convergence, especially in ill-conditioned problems.
-
-
-The more detailed algorithm is described as follow : 
-
-
+Momentum increases the influence of recent gradients while gradually vanishing older ones, which often accelerates convergence.
+The more detailed algorithm is described as follows : 
 
 #figure(
   kind: "algorithm",
@@ -360,27 +354,60 @@ The more detailed algorithm is described as follow :
     inset: 10pt,
     stroke: 0.5pt + black,
   )[
-    *Input:* $L , w_0 , Sigma, lambda ,mu , beta$ \
+    *Input:* $w_0, gamma, beta$ \
     *Output:* approximate solution $w_N$
     
     #v(0.5em)
     $m_0 = 0$
     \
     *for* $k = 0, 1, dots, N - 1$ *do* \
-    #h(2em) $g_k = Sigma w_k - lambda mu$ \
+    #h(2em) $g_k <-- gradient f(w_k)$ \
     #h(2em) $m_(k+1) = beta m_k + (1 -beta) g_k$ \
-    #h(2em) $gamma = 1/L$ \
     #h(2em) $w_(k+1) = P_Delta (w_k - gamma m_(k+1))$ \
     *end for*
   ]
 ]
 
+However, with this algorithm (especially with a fixed $beta$), the rate of convergence has the same order $cal(O)(1/k)$ as the projected gradient descent in the worst-case scenario.\
+A better version of this algorithm in the context of convex and smooth functions is the Nesterov's Accelerated Gradient Method, whose algorithm is described below:
 
-// What is the momentum doing?
+#figure(
+  kind: "algorithm",
+  supplement: [Algorithm],
+  caption: [Projected Gradient Descent with Momentum],
+)[
+  #set align(left)
+  #set par(first-line-indent: 0em)
+  #block(
+    width: 100%,
+    inset: 10pt,
+    stroke: 0.5pt + black,
+  )[
+    *Input:* $w_0, L$ \
+    *Init:* $w_(-1) = w_0, alpha = 1/L, lambda_0 = beta_0 = 0$\
+    *Output:* approximate solution $w_N$
+    
+    *for* $k = 0, 1, dots, N - 1$ *do* \
+    #h(2em) $y_k <-- w_k + beta_k (w_k - w_(k-1))$ \
+    #h(2em) $w_(k+1) <-- y_k - alpha gradient f(y_k)$\
+    #h(2em) $lambda_(k+1) <-- (1 + sqrt(1 + 4 lambda^2_k))/(2), quad beta_(k+1) <-- (lambda_k - 1)/(lambda_(k+1))$ \
+    *end for*
+  ]
+]
+
+This gives us this theoretical bound:
+
+#nonumeq(
+  $
+    f(y_k) - f^* <= (2L ||w_0 - w^star||^2)/((k+1)^2), quad forall k >= 1
+  $
+)
+
+So our convergence rate is $cal(O)(1\/k^2)$, which is faster than gradient descent's one. This also implies that the number of iterations is $cal(O)(1\/sqrt(epsilon))$ to reach a precision of $epsilon$ on the objective value.
 
 == Projected Randomized Coordinate Descent
 
-The projected gradient Coordinate descent is a slight variant of our Projected gradient desent were we are going to choose randomely a direction of descent in order to reduce our computation complexity for large problem. 
+The projected gradient Coordinate descent is a slight variant of the projected gradient descent method were we are going to choose randomely a direction of descent in order to reduce our computation complexity for large problems. 
 Considering $w_k in Delta$ it is then defined by : 
 #nonumeq($
            w_(k+1) = P_Delta (w_k - alpha [gradient f(w_k)]_(i_k)) e_(i_k)
