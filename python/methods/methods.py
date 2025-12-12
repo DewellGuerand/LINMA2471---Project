@@ -64,7 +64,6 @@ class BarzilaiBorweinStepSize(StepSizeStrategy):
     
     Two variants:
     - BB1: α_k = (s_{k-1}^T s_{k-1}) / (s_{k-1}^T y_{k-1})
-    - BB2: α_k = (s_{k-1}^T y_{k-1}) / (y_{k-1}^T y_{k-1})
     
     where s_{k-1} = x_k - x_{k-1} and y_{k-1} = ∇f(x_k) - ∇f(x_{k-1})
     """
@@ -92,18 +91,12 @@ class BarzilaiBorweinStepSize(StepSizeStrategy):
         
         s_dot_y = np.dot(s, y)
         
-        if self.variant == 'BB1':
-            s_dot_s = np.dot(s, s)
-            if abs(s_dot_y) < 1e-14:
-                alpha = self.alpha_init
-            else:
-                alpha = s_dot_s / s_dot_y
-        else:  # BB2
-            y_dot_y = np.dot(y, y)
-            if y_dot_y < 1e-14:
-                alpha = self.alpha_init
-            else:
-                alpha = s_dot_y / y_dot_y
+
+        s_dot_s = np.dot(s, s)
+        if abs(s_dot_y) < 1e-14:
+            alpha = self.alpha_init
+        else:
+            alpha = s_dot_s / s_dot_y
         
         # Clip to reasonable range
         alpha = np.clip(alpha, self.alpha_min, self.alpha_max)
@@ -398,7 +391,7 @@ class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
     def __init__(self, parameters, performance_indicator: PerformanceIndicator):
         super().__init__("ProjectedGradientDescentMomentum_Nesterov", parameters, performance_indicator)
         self.max_iter = parameters.get("max_iter", 1000)
-        self.tol = parameters.get("tol")
+        self.tol = parameters.get("tol" , 10e-20)
         # Internal state for Nesterov acceleration
         self._w_prev = None      # w_{k-1}
         self._lambda_k = 0.0     # λ_k
@@ -527,16 +520,16 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
             convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
             self.metric.append(np.linalg.norm(w_new - w_old))
 
-            if convergence_value < self.tol:
-                return {
-                    "sol": w_new,
-                    "value": model.f(w_new),
-                    "iterations": iter + 1,
-                    "converged": True,
-                    "metric": self.metric,
-                    "time": self.time,
-                    "obj_value": self.obj_value,
-                }
+            # if convergence_value < self.tol:
+            #     return {
+            #         "sol": w_new,
+            #         "value": model.f(w_new),
+            #         "iterations": iter + 1,
+            #         "converged": True,
+            #         "metric": self.metric,
+            #         "time": self.time,
+            #         "obj_value": self.obj_value,
+            #     }
 
         return {
             "sol": w_new,

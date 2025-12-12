@@ -428,6 +428,28 @@ The second issue is related to the stopping criterion from our algorithm. From t
 
 Is it smart to make deterministic choices for the coordinates? Is the answer the same in theory and in practice? Discuss it.
 
+
+== Adaptive step
+In this section we present 3 adaptive step that we have implemented in order to improve the performance of our models.
+
+=== Armijo backtracking line search
+In this method we are going to search for the step $alpha$ such that : 
+#nonumeq(
+  $
+    f(x- alpha gradient f(x)) <= f(x) - c alpha ||gradient f(x)||^2
+  $
+)
+=== Barzilai-Borwein step size
+Here we are going to look for the step $alpha$ which respect this equality : 
+#nonumeq($
+           alpha_k = (s^T s) / (s^T y) #h(2em) "with" s_(k-1) &= x_k - x_(k-1),\ y_(k-1) &= gradient f(x_k) - gradient f(x_k-1) 
+         $)
+
+=== Exact line search
+For a quadratic function we know that the optimal step is : 
+#nonumeq($
+           alpha_k = (||gradient f(w_k)||^2)/(gradient f(w_k)^T Sigma gradient f(w_k))
+         $)
 == Comparison of the 3 models
 
 
