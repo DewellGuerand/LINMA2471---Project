@@ -377,58 +377,59 @@ class ProjectedGradientDescentMomentum(OptimizationMethod):
     
 class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
     """
-    Projected Gradient Descent with Momentum and configurable step size strategy.
+    Nesterov's Accelerated Gradient Method (FISTA-style).
+    
+    Algorithm from report:
+        Input: w_0, L
+        Init: w_{-1} = w_0, α = 1/L, λ_0 = β_0 = 0
+        
+        for k = 0, 1, ..., N-1 do:
+            y_k = w_k + β_k (w_k - w_{k-1})
+            w_{k+1} = P_Δ(y_k - α ∇f(y_k))
+            λ_{k+1} = (1 + sqrt(1 + 4λ_k²)) / 2
+            β_{k+1} = (λ_k - 1) / λ_{k+1}
+    
+    Convergence rate: O(1/k²) for smooth convex functions.
     
     Parameters:
-        step_size: float or StepSizeStrategy - Either a constant value or a strategy object
-        momentum: float - Momentum coefficient (default 0.9)
         max_iter: int - Maximum number of iterations
         tol: float - Convergence tolerance
     """
     def __init__(self, parameters, performance_indicator: PerformanceIndicator):
-        super().__init__("ProjectedGradientDescentMomentum", parameters, performance_indicator)
-        step_size_param = parameters.get("step_size", 0.01)
-        # Support both constant step size and strategy objects
-        if isinstance(step_size_param, StepSizeStrategy):
-            self.step_size_strategy = step_size_param
-        else:
-            self.step_size_strategy = ConstantStepSize(step_size_param)
-        self.momentum = parameters.get("momentum", 0.9)
+        super().__init__("ProjectedGradientDescentMomentum_Nesterov", parameters, performance_indicator)
         self.max_iter = parameters.get("max_iter", 1000)
-        self.tol = parameters.get("tol", 1e-6)
-        self._velocity = None  # Store velocity for momentum
-        self.lambda_param = parameters.get("lambda_param", 0)
-        self.beta_param = parameters.get("beta_param", 0)
+        self.tol = parameters.get("tol")
+        # Internal state for Nesterov acceleration
+        self._w_prev = None      # w_{k-1}
+        self._lambda_k = 0.0     # λ_k
+        self._beta_k = 0.0       # β_k
+        self._alpha = None       # step size = 1/L
         self.metric = []
         self.time = []
         self.obj_value = []
-        self.step_sizes = []
 
     def optimize(self, model, w0):
         # Reset history for each optimization run
         self.metric = []
         self.time = []
         self.obj_value = []
-        self.step_sizes = []
-        self.step_size_strategy.reset()
         
+        # Initialize according to algorithm:
+        # w_{-1} = w_0, α = 1/L, λ_0 = β_0 = 0
         w_new = w0.copy()
-        self._velocity = np.zeros_like(w0)
+        self._w_prev = w0.copy()  # w_{-1} = w_0
+        self._alpha = 1.0 / model.lipschitz_constant()  # α = 1/L
+        self._lambda_k = 0.0  # λ_0 = 0
+        self._beta_k = 0.0    # β_0 = 0
+        
         self.obj_value.append(model.f(w_new))
         
         t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
-            grad = model.gradient(w_old)
             
-            # Get step size from strategy
-            step = self.step_size_strategy.get_step_size(model, w_old, grad, iter)
-            self.step_sizes.append(step)
+            w_new = self.iterate(model, w_old)
             
-            # Update velocity with momentum
-            self._velocity = self.momentum * self._velocity + (1 - self.momentum) * grad
-            w_new = w_old - step * self._velocity
-            w_new = simplex_projection(w_new)
             self.obj_value.append(model.f(w_new))
             
             # Record cumulative time since start
@@ -446,7 +447,6 @@ class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
                     "metric": self.metric,
                     "time": self.time,
                     "obj_value": self.obj_value,
-                    "step_sizes": self.step_sizes,
                 }
 
         return {
@@ -457,10 +457,32 @@ class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
             "metric": self.metric,
             "time": self.time,
             "obj_value": self.obj_value,
-            "step_sizes": self.step_sizes,
         }
 
-    
+    def iterate(self, model, w):
+        """Single iteration (for external use). Note: requires proper initialization."""
+        if self._w_prev is None:
+            self._w_prev = w.copy()
+            self._alpha = 1.0 / model.lipschitz_constant()
+            self._lambda_k = 0.0
+            self._beta_k = 0.0
+        
+        # y_k = w_k + β_k (w_k - w_{k-1})
+        y_k = w + self._beta_k * (w - self._w_prev)
+        
+        # w_{k+1} = P_Δ(y_k - α ∇f(y_k))
+        grad_y = model.gradient(y_k)
+        w_new = simplex_projection(y_k - self._alpha * grad_y)
+        
+        # Update λ and β
+        lambda_new = (1.0 + np.sqrt(1.0 + 4.0 * self._lambda_k ** 2)) / 2.0
+        self._beta_k = (self._lambda_k - 1.0) / lambda_new
+        self._lambda_k = lambda_new
+        self._w_prev = w.copy()
+        
+        return w_new
+
+
 
 
 class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
@@ -504,7 +526,7 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
 
             convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
             self.metric.append(np.linalg.norm(w_new - w_old))
-            
+
             if convergence_value < self.tol:
                 return {
                     "sol": w_new,

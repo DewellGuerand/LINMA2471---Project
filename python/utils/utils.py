@@ -78,6 +78,22 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     if save_dir is not None:
         plt.savefig(os.path.join(save_dir, f'{method_name}_objective_gap.png'), dpi=150, bbox_inches='tight')
     plt.show()
+    # Plot 4: Objective value 
+    plt.figure(figsize=(8, 5))
+    iterations_obj = np.arange(1, len(obj_values) + 1, dtype=float)
+    
+    plt.plot(iterations_obj, obj_values, 'b-', linewidth=1.5, label=r'$f(x_k)$ (empirical)')
+    
+   
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$f(x_k)$', fontsize=12)
+    plt.title('Objective value convergence', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_objective_value.png'), dpi=150, bbox_inches='tight')
+    plt.show()
 
     # Plot 3: Time per iteration
     plt.figure(figsize=(8, 5))
