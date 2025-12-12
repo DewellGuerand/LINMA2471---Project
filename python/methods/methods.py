@@ -388,6 +388,7 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
         super().__init__("ProjectedRandomizedCoordinateDescent", parameters, performance_indicator)
         self.step_size = parameters.get("step_size", 0.01)  # Fallback
         self.max_iter = parameters.get("max_iter", 1000)
+        self.iterate_meth = parameters.get("iter_met")
         self.tol = parameters.get("tol", 1e-6)
         self.metric = []
         self.time = []
@@ -403,12 +404,19 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
         w_new = w0.copy()
         self.obj_value.append(model.f(w_new))
         
+        
 
         
         t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
-            w_new = self.iterate(model, w_old)
+
+            if self.iterate_meth == "Naive": 
+                w_new = self.iterate(model, w_old)
+            elif self.iterate_meth == "Naive2": 
+                w_new = self.iterate_option1(model, w_old)
+            else: 
+                w_new = self.iterate_option2(model, w_old)
             self.obj_value.append(model.f(w_new))
             
             # Record cumulative time since start
@@ -458,9 +466,63 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
         # Update only the selected coordinate
         w_new = w.copy()
         w_new[coord_idx] = w[coord_idx] - self.step_size * grad_i
+        
 
         # Project onto feasible set (simplex)
         w_new = simplex_projection(w_new)
+        return w_new
+    def iterate_option1(self, model, w):
+        n = w.shape[0]
+        # Randomly select a coordinate (éviter de reprendre la même)
+        coord_idx = np.random.randint(0, n)
+        while coord_idx in self.idx_deja_vu:
+            coord_idx = np.random.randint(0, n)
+        
+        self.idx_deja_vu.append(coord_idx)
+
+        if len(self.idx_deja_vu) == n:
+            self.idx_deja_vu = []
+        
+        # Compute partial gradient for the selected coordinate only
+        grad_i = model.gradient_coordinate(w, coord_idx)
+
+       
+
+        # Update only the selected coordinate
+        w_new = w.copy()
+        w_new[coord_idx] = w[coord_idx] - self.step_size * grad_i
+
+        other_coord = np.random.randint(0,n)  
+        while other_coord in self.idx_deja_vu:
+            other_coord = np.random.randint(0, n)
+        
+        w_new[other_coord] = w[other_coord] + self.step_size *grad_i
+
+        # Project onto feasible set (simplex)
+        # w_new = simplex_projection(w_new)
+        return w_new
+    def iterate_option2(self, model, w):
+        n = w.shape[0]
+        i, j = np.random.choice(n, size=2, replace=False)
+
+        grad_i = model.gradient_coordinate(w, i)
+        grad_j = model.gradient_coordinate(w, j)
+
+        d = grad_i - grad_j
+        alpha = self.step_size
+
+        w_new = w.copy()
+        w_new[i] -= alpha * d
+        w_new[j] += alpha * d
+
+        w_new[i] = max(w_new[i], 0)
+        w_new[j] = max(w_new[j], 0)
+
+        s = w_new[i] + w_new[j]
+        if s > 0:
+            w_new[i] *= (w[i] + w[j]) / s
+            w_new[j] *= (w[i] + w[j]) / s
+
         return w_new
 
 

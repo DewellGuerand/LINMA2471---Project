@@ -407,12 +407,18 @@ So our convergence rate is $cal(O)(1\/k^2)$, which is faster than gradient desce
 
 == Projected Randomized Coordinate Descent
 
-The projected gradient Coordinate descent is a slight variant of the projected gradient descent method where we are going to choose randomly a direction of descent in order to reduce our computation complexity for large problems. 
+The last optimization model that we have been ask to implement is the Projected Randomized Coordinate Descent.
+In this algorithm, rather than computing the full gradient, we are going to compute one component of the gradient. We are then going to perform one gradient descent in this direction. A description of the method can be written as follow. 
 Considering $w_k in Delta$ it is then defined by : 
 #nonumeq($
            w_(k+1) = P_Delta (w_k - alpha [gradient f(w_k)]_(i_k)) e_(i_k)
          $)
 with  $i_k tilde cal(U){1,...,n}$
+
+We directly identify several major issue. The first one occurs when we update our weight $w_(k+1)$. Indeed by proceeding in such way, we only update one component of the vector corresponding to the index $i_k$. Then, projecting back onto the simplex induce a modification of the entire vector.
+To fix it we propose 2 options, the first one is the naive one as we are only going to rebalance our weight by modifying an other random weight such that $sum_i w_i = 1$. The second one is a bit more complex, in this version we are also going to take two random weight and trasnfer some value from one to another but this time more cleaverly. We are going to compute their gradient and direct ourself in the direction inducing the biggest variation in term of our objectif function. The update is performed in such a way that the sum of the two selected weights is preserved, ensuring that the iterate remains in the simplex.
+The second issue is related to the stopping criterion from our algorithm. From the beginning we only considered the stopping criterion $||w_(k+1) - w_k|| < epsilon$, but in a Randomized Coordinate descent, the modification of the weight is really small so that $||w_(k+1) - w_k||$ is always really small. So for this algorithm we considered a stopping criterion based on the function value,i.e $||f(w_(k+1)) - f(w_k)||< epsilon $. 
+T
 
 Is it smart to make deterministic choices for the coordinates? Is the answer the same in theory and in practice? Discuss it.
 
