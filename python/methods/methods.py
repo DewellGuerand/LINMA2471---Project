@@ -332,16 +332,7 @@ class ProjectedGradientDescentMomentum(OptimizationMethod):
         t_start = time.time()
         for iter in range(self.max_iter):
             w_old = w_new.copy()
-            grad = model.gradient(w_old)
-            
-            # Get step size from strategy
-            step = self.step_size_strategy.get_step_size(model, w_old, grad, iter)
-            self.step_sizes.append(step)
-            
-            # Update velocity with momentum
-            self._velocity = self.momentum * self._velocity + (1 - self.momentum) * grad
-            w_new = w_old - step * self._velocity
-            w_new = simplex_projection(w_new)
+            w_new = self.iterate(model, w_old)
             self.obj_value.append(model.f(w_new))
             
             # Record cumulative time since start
@@ -372,6 +363,15 @@ class ProjectedGradientDescentMomentum(OptimizationMethod):
             "obj_value": self.obj_value,
             "step_sizes": self.step_sizes,
         }
+    def iterate(self, model, w):
+        grad = model.gradient(w)
+        step = self.step_size_strategy.get_step_size(model, w, grad, 0)
+        # Update velocity with momentum
+        self._velocity = self.momentum * self._velocity + (1 - self.momentum) * grad
+        w_new = w - step * self._velocity
+        # Project onto feasible set (simplex)
+        w_new = simplex_projection(w_new)
+        return w_new
 
     
     
@@ -495,7 +495,7 @@ class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
                 w_new = self.iterate(model, w_old)
             elif self.iterate_meth == "Naive2": 
                 w_new = self.iterate_option1(model, w_old)
-            else: 
+            elif self.iterate_meth == "Cleaver":
                 w_new = self.iterate_option2(model, w_old)
             self.obj_value.append(model.f(w_new))
             

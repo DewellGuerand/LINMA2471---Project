@@ -20,7 +20,7 @@ def simplex_projection(v):
     w = np.maximum(v + theta, 0)
     return w
 
-def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2})$', method_name='method', save_dir=None):
+def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2})$', method_name='method', save_dir=None , metric_used='iterate'):
     """
     Plot convergence analysis with 3 separate figures.
     
@@ -44,9 +44,12 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
 
     # Plot 1: Convergence metric
     plt.figure(figsize=(8, 5))
-    plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$\|x_{k+1} - x_k\|$ (empirical)')
-    
-   
+    if metric_used == 'iterate':
+        plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$\|x_{k+1} - x_k\|$ (empirical)')
+    elif metric_used  == 'function':
+        plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$f(x_{k+1}) - f(x_k)$ (empirical)')
+    else :
+        raise ValueError("metric must be 'iterate' or 'function'")
     plt.xlabel('Iteration $k$', fontsize=12)
     plt.ylabel('Convergence metric', fontsize=12)
     plt.title(f'Convergence rate', fontsize=13)
@@ -186,7 +189,7 @@ def measure_iteration_complexity(method_class, method_params, model, w0, toleran
     return {'tolerances': valid_tolerances, 'iterations': iterations_arr}
     
 
-def compare_methods(results_dict, save_dir=None , method_name='method'):
+def compare_methods(results_dict, save_dir=None , method_name='method' , metric_used='iterate'):
     """
     Compare multiple optimization methods on 4 different plots.
     
@@ -218,7 +221,12 @@ def compare_methods(results_dict, save_dir=None , method_name='method'):
                    linestyle=linestyles[i % len(linestyles)], linewidth=1.5, label=name)
     
     plt.xlabel('Iteration $k$', fontsize=12)
-    plt.ylabel(r'$\|x_{k+1} - x_k\|$', fontsize=12)
+    if metric_used == 'iterate':
+        plt.ylabel(r'$\|x_{k+1} - x_k\|$', fontsize=12)
+    elif metric_used  == 'function':
+        plt.ylabel(r'$f(x_{k+1}) - f(x_k)$', fontsize=12)
+    else : 
+        raise ValueError("metric must be 'iterate' or 'function'")
     plt.title('Convergence Metric Comparison', fontsize=13)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
@@ -251,6 +259,8 @@ def compare_methods(results_dict, save_dir=None , method_name='method'):
     if save_dir is not None:
         plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_objective_gap.png'), dpi=150, bbox_inches='tight')
     plt.show()
+
+
     
     # Plot 3: Computational cost comparison (bar chart)
     plt.figure(figsize=(10, 6))
@@ -276,6 +286,31 @@ def compare_methods(results_dict, save_dir=None , method_name='method'):
     plt.tight_layout()
     if save_dir is not None:
         plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_computational_cost.png'), dpi=150, bbox_inches='tight')
+    plt.show()
+
+    #Plot 4:Objectif function value 
+    plt.figure(figsize=(10, 6))
+    
+    # Find global f* (minimum across all methods)
+    all_final_values = [np.array(result['obj_value'])[-1] for result in results_dict.values()]
+    f_star_global = min(all_final_values)
+    
+    for i, (name, result) in enumerate(results_dict.items()):
+        obj_values = np.array(result['obj_value'])
+        obj_gap = obj_values 
+        # Remove zeros or negative values for log plot
+        iterations_obj = np.arange(1, len(obj_gap) + 1, dtype=float)
+        plt.plot(iterations_obj, obj_gap, color=colors[i % len(colors)], 
+                   linestyle=linestyles[i % len(linestyles)], linewidth=1.5, label=name)
+    
+    plt.xlabel('Iteration $k$', fontsize=12)
+    plt.ylabel(r'$f(x_k)$', fontsize=12)
+    plt.title('Objective Value Convergence Comparison', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_objectif_value.png'), dpi=150, bbox_inches='tight')
     plt.show()
     
 
