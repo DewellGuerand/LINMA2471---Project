@@ -19,6 +19,7 @@ from .methods import (
     ProjectedRandomizedCoordinateDescent,
     ProjectedSubgradientMethod,
     ProximalGradientMethod,
+    ProximalGradientMethod_fast,
     InteriorPointMethod,
 )
 
@@ -40,5 +41,6 @@ __all__ = [
     "ProjectedRandomizedCoordinateDescent",
     "ProjectedSubgradientMethod",
     "ProximalGradientMethod",
+    "ProximalGradientMethod_fast",
     "InteriorPointMethod",
 ]
