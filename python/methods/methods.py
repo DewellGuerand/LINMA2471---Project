@@ -431,16 +431,16 @@ class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
             convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
             self.metric.append(convergence_value)
             
-            if convergence_value < self.tol:
-                return {
-                    "sol": w_new,
-                    "value": model.f(w_new),
-                    "iterations": iter + 1,
-                    "converged": True,
-                    "metric": self.metric,
-                    "time": self.time,
-                    "obj_value": self.obj_value,
-                }
+            # if convergence_value < self.tol:
+            #     return {
+            #         "sol": w_new,
+            #         "value": model.f(w_new),
+            #         "iterations": iter + 1,
+            #         "converged": True,
+            #         "metric": self.metric,
+            #         "time": self.time,
+            #         "obj_value": self.obj_value,
+            #     }
 
         return {
             "sol": w_new,
@@ -758,17 +758,33 @@ class ProximalGradientMethod(OptimizationMethod):
         }
 
     def iterate(self, model, w):
-        # Gradient step on smooth part
+        """
+        Proximal gradient for: f(w) = smooth(w) + c * ||w - w_prev||_1  subject to w ∈ Δ
+        
+        We use an alternating/splitting approach:
+        1. Gradient step on smooth part
+        2. Soft thresholding (proximal of L1)
+        3. Project onto simplex
+        
+        Note: This is an approximation. For exact solution, use ADMM.
+        The order matters: we soft-threshold the *deviation* from w_prev,
+        then project to maintain feasibility.
+        """
+        # Step 1: Gradient step on smooth part only
         grad_smooth = model.smooth_gradient(w)
         w_half = w - self.step_size * grad_smooth
         
-        # Proximal operator for L1 penalty: soft thresholding
-        # prox_{t * c * ||. - w_prev||_1}(x) = w_prev + soft_threshold(x - w_prev, t * c)
+        # Step 2: Soft thresholding on (w_half - w_prev) to handle L1 penalty
+        # prox_{t*c*||·||_1}(x) around w_prev
         threshold = self.step_size * model.c
-        w_new = model.w_prev + self._soft_threshold(w_half - model.w_prev, threshold)
+        diff = w_half - model.w_prev
+        diff_shrunk = self._soft_threshold(diff, threshold)
+        w_prox = model.w_prev + diff_shrunk
         
-        # Project onto feasible set (simplex)
-        w_new = simplex_projection(w_new)
+        # Step 3: Project onto simplex (this may slightly violate optimality 
+        # but maintains feasibility)
+        w_new = simplex_projection(w_prox)
+        
         return w_new
 
     def _soft_threshold(self, x, threshold):

@@ -480,7 +480,7 @@ In the next sections, we will present the three methods we will implement on thi
 == Projected Subgradient Method
 
 == Proximal Gradient Descent
-
+== Long-Step Path-Following Interior-Point method
 Did you think of other methods? Why could they help solve the problem? What structure of the problem made you think of this method?
 
 = Numerical results
