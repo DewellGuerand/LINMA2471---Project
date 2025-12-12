@@ -324,6 +324,12 @@ Knowing that our function is also convex, we have the following convergence resu
 
 Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $cal(O)(1\/epsilon)$ to reach an $epsilon$-accuracy for the objective value.
 
+#figure(
+  image(
+    "../figures/"
+  )
+)
+
 
 == Projected Gradient Descent with Momentum
 

@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 def simplex_projection(v):
     r"""Compute the projection of `v` on the simplex.
@@ -19,7 +20,7 @@ def simplex_projection(v):
     w = np.maximum(v + theta, 0)
     return w
 
-def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2})$' ):
+def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2})$', method_name='method', save_dir=None):
     """
     Plot convergence analysis with 3 separate figures.
     
@@ -27,6 +28,8 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
         result: dict with 'metric', 'time', 'obj_value' keys
         theoretical_rate_exp: exponent for theoretical rate (e.g., -0.5 for O(k^{-1/2}), -1 for O(1/k))
         rate_label: label for the theoretical rate in the legend
+        method_name: name of the method for saving files (e.g., 'ProjectedGD', 'RCD')
+        save_dir: directory to save figures. If None, figures are not saved.
     """
     iterations = np.arange(1, len(result['metric']) + 1, dtype=float)
     metric = np.array(result['metric'])
@@ -35,6 +38,11 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     
     time_per_iter = np.diff(np.concatenate([[0], time_values])) * 1000  # Convert to ms
 
+    # Create save directory if specified
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
+
+    # Plot 1: Convergence metric
     plt.figure(figsize=(8, 5))
     plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$\|x_{k+1} - x_k\|$ (empirical)')
     
@@ -45,8 +53,11 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_convergence_metric.png'), dpi=150, bbox_inches='tight')
     plt.show()
 
+    # Plot 2: Objective value gap
     plt.figure(figsize=(8, 5))
     f_star = obj_values[-1]  # Approximate f* with final value
     obj_gap = obj_values[:-1] - f_star  # Remove last element (it's 0)
@@ -61,8 +72,11 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_objective_gap.png'), dpi=150, bbox_inches='tight')
     plt.show()
 
+    # Plot 3: Time per iteration
     plt.figure(figsize=(8, 5))
     plt.plot(iterations, time_per_iter, 'g-', linewidth=0.8, alpha=0.5, label='Per iteration')
     
@@ -79,6 +93,8 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     plt.legend(fontsize=9)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_time_per_iteration.png'), dpi=150, bbox_inches='tight')
     plt.show()
 
     # Summary stats
@@ -91,7 +107,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
 
 
 
-def plot_iterations_vs_tolerance(result, theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$'):
+def plot_iterations_vs_tolerance(result, theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$', method_name='method', save_dir=None):
     """
     Plot the number of iterations needed to reach a given tolerance epsilon.
     
@@ -101,6 +117,8 @@ def plot_iterations_vs_tolerance(result, theoretical_exp=2, rate_label=r'$O(\eps
         result: dict with 'metric' key containing convergence values at each iteration
         theoretical_exp: exponent for theoretical complexity (e.g., 2 for O(epsilon^{-2}))
         rate_label: label for the theoretical rate in the legend
+        method_name: name of the method for saving files (e.g., 'ProjectedGD', 'RCD')
+        save_dir: directory to save figures. If None, figures are not saved.
     """
     metric = np.array(result['metric'])
     
@@ -125,6 +143,10 @@ def plot_iterations_vs_tolerance(result, theoretical_exp=2, rate_label=r'$O(\eps
     if len(iters_needed) == 0:
         print("No valid data points to plot.")
         return
+
+    # Create save directory if specified
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
     
     # Plot iterations vs epsilon
     plt.figure(figsize=(8, 5))
@@ -141,27 +163,35 @@ def plot_iterations_vs_tolerance(result, theoretical_exp=2, rate_label=r'$O(\eps
     plt.grid(True, alpha=0.3, which='both')
     plt.gca().invert_xaxis()  # Smaller epsilon on the right
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_iteration_complexity.png'), dpi=150, bbox_inches='tight')
     plt.show()
     
 
-def compare_methods(results_dict):
+def compare_methods(results_dict, save_dir=None , method_name='method'):
     """
     Compare multiple optimization methods on 4 different plots.
     
     Args:
         results_dict: dict of {method_name: result_dict}
             Each result_dict should have keys: 'metric', 'time', 'obj_value'
+        save_dir: directory to save figures. If None, figures are not saved.
     
     Example:
         compare_methods({
             'Projected GD': result_ProjectedGradientMethod,
             'PGD + Momentum': result_ProjectedGradientDescentMomentum,
             'Randomized CD': result_ProjectedRandomizedCoordinateDescent,
-        })
+        }, save_dir='figures')
     """
     colors = ['b', 'r', 'g', 'orange', 'purple', 'brown', 'pink']
     linestyles = ['-', '--', '-.', ':', '-', '--', '-.']
+
+    # Create save directory if specified
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
     
+    # Plot 1: Convergence metric comparison
     plt.figure(figsize=(10, 6))
     for i, (name, result) in enumerate(results_dict.items()):
         iterations = np.arange(1, len(result['metric']) + 1, dtype=float)
@@ -175,8 +205,11 @@ def compare_methods(results_dict):
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, 'comparison_convergence_metric.png'), dpi=150, bbox_inches='tight')
     plt.show()
     
+    # Plot 2: Objective value gap comparison
     plt.figure(figsize=(10, 6))
     
     # Find global f* (minimum across all methods)
@@ -197,8 +230,11 @@ def compare_methods(results_dict):
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_objective_gap.png'), dpi=150, bbox_inches='tight')
     plt.show()
     
+    # Plot 3: Computational cost comparison (bar chart)
     plt.figure(figsize=(10, 6))
     
     method_names = []
@@ -220,6 +256,8 @@ def compare_methods(results_dict):
     plt.title('Computational Cost per Iteration', fontsize=13)
     plt.grid(True, alpha=0.3, axis='y')
     plt.tight_layout()
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_computational_cost.png'), dpi=150, bbox_inches='tight')
     plt.show()
     
 
