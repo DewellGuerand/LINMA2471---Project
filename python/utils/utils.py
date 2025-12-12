@@ -129,7 +129,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
 
 def measure_iteration_complexity(method_class, method_params, model, w0, tolerances, 
                                   theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$',
-                                  method_name='method', save_dir=None, max_iter=10000):
+                                  method_name='method', save_dir=None, max_iter=10000 , metrics = None):
     """
     Measure iteration complexity by re-running optimization for each tolerance.
     
@@ -150,7 +150,8 @@ def measure_iteration_complexity(method_class, method_params, model, w0, toleran
     Returns:
         dict with 'tolerances' and 'iterations' arrays
     """
-    from methods import IteratePerformanceIndicator
+    from methods import IteratePerformanceIndicator, ValuePerformanceIndicator
+    
     
     iterations_list = []
     valid_tolerances = []
@@ -160,8 +161,13 @@ def measure_iteration_complexity(method_class, method_params, model, w0, toleran
         params = method_params.copy()
         params['tol'] = tol
         params['max_iter'] = max_iter
-        
-        method = method_class(params, IteratePerformanceIndicator())
+        if metrics == 'iterate': 
+            performance_indicator = IteratePerformanceIndicator()
+        elif metrics == 'function':
+            performance_indicator = ValuePerformanceIndicator()
+        else:
+            performance_indicator = IteratePerformanceIndicator()  # default
+        method = method_class(params, performance_indicator=performance_indicator)
         result = method.optimize(model, w0.copy())
         
         if result['converged']:
