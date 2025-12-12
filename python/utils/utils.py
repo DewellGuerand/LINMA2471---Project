@@ -107,65 +107,83 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
 
 
 
-def plot_iterations_vs_tolerance(result, theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$', method_name='method', save_dir=None):
+
+def measure_iteration_complexity(method_class, method_params, model, w0, tolerances, 
+                                  theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$',
+                                  method_name='method', save_dir=None, max_iter=10000):
     """
-    Plot the number of iterations needed to reach a given tolerance epsilon.
+    Measure iteration complexity by re-running optimization for each tolerance.
     
-    This verifies the theoretical complexity bound (e.g., O(epsilon^{-2}) for projected gradient).
+    This is the correct way to verify theoretical complexity bounds like O(epsilon^{-2}).
     
     Args:
-        result: dict with 'metric' key containing convergence values at each iteration
-        theoretical_exp: exponent for theoretical complexity (e.g., 2 for O(epsilon^{-2}))
-        rate_label: label for the theoretical rate in the legend
-        method_name: name of the method for saving files (e.g., 'ProjectedGD', 'RCD')
-        save_dir: directory to save figures. If None, figures are not saved.
+        method_class: The optimization method class (e.g., ProjectedGradientMethod)
+        method_params: Base parameters dict for the method (will be modified for each tol)
+        model: The optimization model
+        w0: Initial point
+        tolerances: List/array of tolerance values to test
+        theoretical_exp: Exponent for theoretical complexity (e.g., 2 for O(epsilon^{-2}))
+        rate_label: Label for the theoretical rate
+        method_name: Name for saving files
+        save_dir: Directory to save figures
+        max_iter: Maximum iterations allowed
+        
+    Returns:
+        dict with 'tolerances' and 'iterations' arrays
     """
-    metric = np.array(result['metric'])
+    from methods import IteratePerformanceIndicator
     
-    # Generate epsilon values from max to min of the metric
-    eps_min = metric[-1] if metric[-1] > 0 else metric[metric > 0][-1]
-    eps_max = metric[0]
-    epsilons = np.logspace(np.log10(eps_max), np.log10(eps_min), 100)
+    iterations_list = []
+    valid_tolerances = []
     
-    # Find number of iterations needed to reach each epsilon
-    iters_needed = []
-    valid_epsilons = []
+    for tol in tolerances:
+        # Create method with this tolerance
+        params = method_params.copy()
+        params['tol'] = tol
+        params['max_iter'] = max_iter
+        
+        method = method_class(params, IteratePerformanceIndicator())
+        result = method.optimize(model, w0.copy())
+        
+        if result['converged']:
+            iterations_list.append(result['iterations'])
+            valid_tolerances.append(tol)
+            print(f"  tol={tol:.2e}: {result['iterations']} iterations")
+        else:
+            print(f"  tol={tol:.2e}: did not converge in {max_iter} iterations")
     
-    for eps in epsilons:
-        idx = np.where(metric <= eps)[0]
-        if len(idx) > 0:
-            iters_needed.append(idx[0] + 1)  # +1 because iterations are 1-indexed
-            valid_epsilons.append(eps)
+    iterations_arr = np.array(iterations_list)
+    valid_tolerances = np.array(valid_tolerances)
     
-    iters_needed = np.array(iters_needed)
-    valid_epsilons = np.array(valid_epsilons)
+    if len(iterations_arr) == 0:
+        print("No valid data points.")
+        return None
     
-    if len(iters_needed) == 0:
-        print("No valid data points to plot.")
-        return
-
     # Create save directory if specified
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
     
-    # Plot iterations vs epsilon
+    # Plot
     plt.figure(figsize=(8, 5))
-    plt.loglog(valid_epsilons, iters_needed, 'b-', linewidth=1.5, label='Empirical')
+    plt.loglog(valid_tolerances, iterations_arr, 'bo-', linewidth=1.5, markersize=6, label='Empirical')
     
-    C = iters_needed[0] * (valid_epsilons[0] ** theoretical_exp)
-    theoretical_iters = C * (valid_epsilons ** (-theoretical_exp))
-    plt.loglog(valid_epsilons, theoretical_iters, 'r--', linewidth=2, label=f'{rate_label} (theoretical)')
+    # Fit theoretical curve
+    C = iterations_arr[0] * (valid_tolerances[0] ** theoretical_exp)
+    theoretical_iters = C * (valid_tolerances ** (-theoretical_exp))
+    plt.loglog(valid_tolerances, theoretical_iters, 'r--', linewidth=2, label=f'{rate_label} (theoretical)')
     
     plt.xlabel(r'Tolerance $\epsilon$', fontsize=12)
-    plt.ylabel(r'Iterations $K$ to reach $\|x_{k+1} - x_k\| \leq \epsilon$', fontsize=12)
-    plt.title(f'Iteration Complexity: {rate_label}', fontsize=13)
+    plt.ylabel(r'Iterations $K(\epsilon)$', fontsize=12)
+    plt.title(f'Iteration Complexity (re-run per $\\epsilon$)', fontsize=13)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
-    plt.gca().invert_xaxis()  # Smaller epsilon on the right
+    plt.gca().invert_xaxis()
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_iteration_complexity.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_true_iteration_complexity.png'), dpi=150, bbox_inches='tight')
     plt.show()
+    
+    return {'tolerances': valid_tolerances, 'iterations': iterations_arr}
     
 
 def compare_methods(results_dict, save_dir=None , method_name='method'):

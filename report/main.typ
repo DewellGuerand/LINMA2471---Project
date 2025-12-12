@@ -326,7 +326,7 @@ Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $c
 
 #figure(
   image(
-    "../figures/"
+    "../figures/Projected_Gradient_iteration_complexity.png"
   )
 )
 

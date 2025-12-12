@@ -4,14 +4,15 @@
 from .utils import (
     plot_convergence,
     simplex_projection,
-    plot_iterations_vs_tolerance,
     compare_methods,
+    measure_iteration_complexity,
     
 )
 
 __all__ = [
     "simplex_projection",
     "plot_convergence",
-    "plot_iterations_vs_tolerance",
-    "compare_methods"
+    "compare_methods",
+    "measure_iteration_complexity",
+    
 ]
