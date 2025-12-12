@@ -16,3 +16,9 @@ kkt:
   title: "Karush–Kuhn–Tucker conditions"
   url: "https://en.wikipedia.org/wiki/Karush%E2%80%93Kuhn%E2%80%93Tucker_conditions"
   access-date: 2025-12-08
+
+prox_slides:
+  type: web
+  title: "Proximal Gradient Slides"
+  url: "https://www.stat.cmu.edu/~ryantibs/convexopt/lectures/prox-grad.pdf"
+  access-date: 2025-12-12

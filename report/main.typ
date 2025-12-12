@@ -1,4 +1,4 @@
-#import "@preview/charged-ieee:0.1.4": ieee
+#import "ieee.typ": ieee
 #import "components.typ": frame
 
 #set page(numbering: "– 1 of 1 –")
@@ -14,7 +14,7 @@
     ),
   ),
   index-terms: ("Scientific writing", "Typesetting", "Document creation", "Syntax"),
-  bibliography: bibliography("refs.yml"),
+  bibliography: bibliography("refs.yml", full: true),
   figure-supplement: [Fig.],
 )
 
@@ -37,7 +37,7 @@
 
 Portfolio optimization is the core of modern quantitative finance. It helps investor solve the trade-off problem between maximizing expected returns from investments while managing risks. Originally, this problem was described as a smooth mean-variance problem introduced by Markowitz @markowitz1952. This problem minimizes the portfolio variance while targeting a certain expected return. This first problem, however, does not take _transaction cost_ into account, therefore leading to a second version of this problem integrating this in the objective. This new problem is more realistic, though it is now non-smooth. Because of this key difference between the two models, the suitable optimization methods will differ from one another. 
 
-The aim of this report is thus to compare different methods for both models by analyzing the computational cost of the methods and their convergence--both empirically and using theoretical results-- 
+The aim of this report is thus to compare different methods for both models by analyzing the computational cost of the methods and their convergence, both empirically and using theoretical results.
 
 = Data
 
@@ -324,11 +324,11 @@ Knowing that our function is also convex, we have the following convergence resu
 
 Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $cal(O)(1\/epsilon)$ to reach an $epsilon$-accuracy for the objective value. We indeed confirm our result numerically.
 
-#figure(
-  image(
-    "../figures/ProjectedGD_true_iteration_complexity.png"
-  )
-)
+// #figure(
+//   image(
+//     "../figures/ProjectedGD_true_iteration_complexity.png"
+//   )
+// )
 
 
 == Projected Gradient Descent with Momentum
@@ -375,12 +375,12 @@ The more detailed algorithm is described as follows :
 ]
 
 However, with this algorithm (especially with a fixed $beta$), the rate of convergence has the same order $cal(O)(1/k)$ as the projected gradient descent in the worst-case scenario.\
-A better version of this algorithm in the context of convex and smooth functions is the Nesterov's Accelerated Gradient Method, whose algorithm is described below:
+A better version of this algorithm in the context of convex and smooth functions is the _Nesterov's Accelerated Gradient Method_, whose algorithm is described below:
 
 #figure(
   kind: "algorithm",
   supplement: [Algorithm],
-  caption: [Projected Gradient Descent with Momentum],
+  caption: [Nesterov's accelerated Gradient Method],
 )[
   #set align(left)
   #set par(first-line-indent: 0em)
@@ -475,11 +475,95 @@ This essentially means that we do not want to drastically change the current all
 
 The main difference with the smooth model is that we can not compute the gradient explicitly. Instead, we will have to use methods that either use a subgradient, or other optimization techniques.
 
-In the next sections, we will present the three methods we will implement on this model, that is: projected subgradient method, proximal gradient descent and interior point method.
+In the next sections, we will present the three methods we will implement on this model, that is: projected subgradient method, proximal gradient descent and interior point method. For those methods, we will decompose the previous model into a smooth part and a non-smooth part which we will denote by:
+
+#nonumeq(
+  $
+    &g(w) := 1/2 w^top Sigma w - lambda w^top mu, quad  h(w) := c||w - w_"prev"||_1\
+    ==> &f(w) = g(w) + h(w)
+  $
+)
 
 == Projected Subgradient Method
 
 == Proximal Gradient Descent
+
+Instead of having to rely on the subgradient of $h$ in our algorithm, we can use the _proximal gradient method_. We define the proximal operator for $h$ given a step-size $t$ by:
+
+#nonumeq(
+  $
+    "prox"_(t, h)(x) = arg min_(z in RR^n) 1/(2t) ||x - z||_2^2 + h(z)
+  $
+)
+
+The proximal gradient method is then given by (given $w_0$):
+
+#nonumeq(
+  $
+    w_k = "prox"_(t_k, h)(w_(k-1) - t_k gradient g(x^(k-1))), quad k = 1, 2, dots
+  $
+)
+
+This method intuitively means:
+
+- First term in the $"prox"$ operator: find a point $z$ that stays close to the gradient update of $g$
+- Second term in the $"prox"$ operator: Also, try to make $h$ small
+
+Even though this looks like we just reformulated the optimization problem, in some special cases the proximal operator has a closed-form expression. In our case, we have to obtain an expression for the proximal operator of the $cal(l)_1$-norm. It can be proven that, for a function $phi(x) = c||x||_1$, the proximal operator is given by:
+
+#nonumeq(
+  $
+    ["prox"_(t, phi)(x)]_i = cases(x_i - c t quad &"if" x_i > c t,
+                                   0 quad &"if" -c t <= x_i <= c t,
+                                   x_i + c t quad &"if" x_i < -c t) 
+  $
+)
+
+In our case, we have $h(w) = phi(w - w_"prev")$. It is easy to adapt the previous formula to this case\
+In the unconstrained case, given a fixed step-size $t <= 1/L$ (where $L$ is the smoothness constant of $g$), we have the following convergence result:
+
+#nonumeq(
+  $
+    f(w_k) - f^star <= (||w_0 - w^star||_2^2)/(2k t)
+  $
+)
+
+Therefore, this method has a convergence rate of $cal(O)(1\/k)$, or $cal(O)(1\/epsilon)$. However, we have to consider the cost of computing the proximal in practice. Fortunately, we have a variant of this method based on the Nesterov's accelerated gradient method, the _Accelerated Proximal Gradient Method_. This method is described by:
+
+#figure(
+  kind: "algorithm",
+  supplement: [Algorithm],
+  caption: [Accelerated Proximal Gradient Method],
+)[
+  #set align(left)
+  #set par(first-line-indent: 0em)
+  #block(
+    width: 100%,
+    inset: 10pt,
+    stroke: 0.5pt + black,
+  )[
+    *Input:* $w_0, L$ \
+    *Init:* $y_(1) = w_0, t_1 = 1$\
+    *Output:* approximate solution $w_N$
+    
+    *for* $k = 0, 1, dots, N - 1$ *do* \
+    #h(2em) $x_k <-- "prox"_(1/L, h)(y_k - 1/L gradient f(y_k))$#v(.5em) 
+    #h(2em) $t_(k+1) <-- (1 + sqrt(1 + 4t_k^2))/2$\
+    #h(2em) $y_(k+1) <-- w_k + ((t_k - 1)/(t_(k+1)))(w_k - w_(k-1))$ \
+    *end for*
+  ]
+]
+
+This time, in the unconstrained case, we have the following convergence result:
+
+#nonumeq(
+  $
+    f(w_k) - f^star <= (2||w_0 - w^star||_2^2)/(t(k+1)^2)
+  $
+)
+
+which thus gives us a convergence rate of $cal(O)(1\/k^2)$ or $cal(O)(1\/sqrt(epsilon))$.
+
 == Long-Step Path-Following Interior-Point method
 Did you think of other methods? Why could they help solve the problem? What structure of the problem made you think of this method?
 
