@@ -339,8 +339,9 @@ class ProjectedGradientDescentMomentum(OptimizationMethod):
             self.step_sizes.append(step)
             
             # Update velocity with momentum
-            self._velocity = self.momentum * self._velocity - step * grad
-            w_new = simplex_projection(w_old + self._velocity)
+            self._velocity = self.momentum * self._velocity + (1 - self.momentum) * grad
+            w_new = w_old - step * self._velocity
+            w_new = simplex_projection(w_new)
             self.obj_value.append(model.f(w_new))
             
             # Record cumulative time since start
@@ -372,15 +373,94 @@ class ProjectedGradientDescentMomentum(OptimizationMethod):
             "step_sizes": self.step_sizes,
         }
 
-    def iterate(self, model, w):
-        grad = model.gradient(w)
-        step = self.step_size_strategy.get_step_size(model, w, grad, 0)
-        # Update velocity with momentum
-        self._velocity = self.momentum * self._velocity - step * grad
-        w_new = w + self._velocity
-        # Project onto feasible set (simplex)
-        w_new = simplex_projection(w_new)
-        return w_new
+    
+    
+class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
+    """
+    Projected Gradient Descent with Momentum and configurable step size strategy.
+    
+    Parameters:
+        step_size: float or StepSizeStrategy - Either a constant value or a strategy object
+        momentum: float - Momentum coefficient (default 0.9)
+        max_iter: int - Maximum number of iterations
+        tol: float - Convergence tolerance
+    """
+    def __init__(self, parameters, performance_indicator: PerformanceIndicator):
+        super().__init__("ProjectedGradientDescentMomentum", parameters, performance_indicator)
+        step_size_param = parameters.get("step_size", 0.01)
+        # Support both constant step size and strategy objects
+        if isinstance(step_size_param, StepSizeStrategy):
+            self.step_size_strategy = step_size_param
+        else:
+            self.step_size_strategy = ConstantStepSize(step_size_param)
+        self.momentum = parameters.get("momentum", 0.9)
+        self.max_iter = parameters.get("max_iter", 1000)
+        self.tol = parameters.get("tol", 1e-6)
+        self._velocity = None  # Store velocity for momentum
+        self.lambda_param = parameters.get("lambda_param", 0)
+        self.beta_param = parameters.get("beta_param", 0)
+        self.metric = []
+        self.time = []
+        self.obj_value = []
+        self.step_sizes = []
+
+    def optimize(self, model, w0):
+        # Reset history for each optimization run
+        self.metric = []
+        self.time = []
+        self.obj_value = []
+        self.step_sizes = []
+        self.step_size_strategy.reset()
+        
+        w_new = w0.copy()
+        self._velocity = np.zeros_like(w0)
+        self.obj_value.append(model.f(w_new))
+        
+        t_start = time.time()
+        for iter in range(self.max_iter):
+            w_old = w_new.copy()
+            grad = model.gradient(w_old)
+            
+            # Get step size from strategy
+            step = self.step_size_strategy.get_step_size(model, w_old, grad, iter)
+            self.step_sizes.append(step)
+            
+            # Update velocity with momentum
+            self._velocity = self.momentum * self._velocity + (1 - self.momentum) * grad
+            w_new = w_old - step * self._velocity
+            w_new = simplex_projection(w_new)
+            self.obj_value.append(model.f(w_new))
+            
+            # Record cumulative time since start
+            self.time.append(time.time() - t_start)
+
+            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
+            self.metric.append(convergence_value)
+            
+            if convergence_value < self.tol:
+                return {
+                    "sol": w_new,
+                    "value": model.f(w_new),
+                    "iterations": iter + 1,
+                    "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
+                    "step_sizes": self.step_sizes,
+                }
+
+        return {
+            "sol": w_new,
+            "value": model.f(w_new),
+            "iterations": self.max_iter,
+            "converged": False,
+            "metric": self.metric,
+            "time": self.time,
+            "obj_value": self.obj_value,
+            "step_sizes": self.step_sizes,
+        }
+
+    
 
 
 class ProjectedRandomizedCoordinateDescent(OptimizationMethod):
