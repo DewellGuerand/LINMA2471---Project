@@ -324,12 +324,76 @@ Knowing that our function is also convex, we have the following convergence resu
 
 Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $cal(O)(1\/epsilon)$ to reach an $epsilon$-accuracy for the objective value. We indeed confirm our result numerically.
 
-// #figure(
-//   image(
-//     "../figures/ProjectedGD_true_iteration_complexity.png"
-//   )
-// )
 
+
+
+== Adaptive step for Projected Gradient Descent
+
+The projected gradient method we just presented used a fixed step-size. We can however improve the convergence of this method by using _adaptive steps_. In this section, we will present three adaptive step size that we will implement to, hopefully, obtain better performances. Note, however, that those step-size were originally designed for unconstrained problem. In practice, they also work quite well in the projected case as we will see later with numerical results.
+
+=== Armijo backtracking line search
+
+The first adaptative step-size method we will implement is the _Armijo Line Search_. This method start with a candidate new iterate and decreases the step size until a condition is satisfied. The algorithm is described as follows:
+
+#figure(
+  kind: "algorithm",
+  supplement: [Algorithm],
+  caption: [Armijo Line Search for PGD],
+  frame()[
+      *Input:* $w_k, c in (0, 1), rho in (0, 1), alpha_0 > 0$ \
+      *Init:* $k := 0$\
+      *Output:* Step-size $alpha_k$ for PGD
+      
+      #v(0.5em)
+      
+      *Step 1:* $w^(+)_(k) := P_(Delta)(w_k - alpha_k gradient f(w_k))$\
+      *Step 2:* \
+      - If $f(w^(+)_k) <= f(w_k) - c alpha_k ||gradient f(w_k)||^2$: *return* $alpha_k$\
+      - Else: Set $alpha_(k+1) := rho dot alpha_k, k := k+1$, Go to *Step 1*
+  ]
+)
+
+This method has several advantages. First of all, it does not require the Lipschiz constant $L$ of the gradient. Also, it offers the same computational complexity as the original projected gradient descent. Most importantly, it often considerably increases the convergence of this method. 
+
+=== Barzilai-Borwein step size
+
+Until now, we never used second order information in the model. We may be tempted to implement the Newton's method instead of a Gradient Descent but it requires computing the inverse of the hessian $Sigma$. In practice, it is expensive and sometimes (likely to be the case here) the hessian is singular. The Barzilai-Borwein method, applied to the Gradient Descent, aims to find a step-size $alpha_k$ that approximates the Newton step. Here is the description of this method:
+
+
+#figure(
+  kind: "algorithm",
+  supplement: [Algorithm],
+  caption: [Barzilai-Borwein Method (Least-Square version)],
+  frame()[
+      *Input:* $w_k, w_(k-1)$ \
+      *Output:* Step-size $alpha_k := (s^(k-1)^top s^(k-1))/(s^(k-1)^top y^(k-1))$\
+      where $s^(k-1) := w^(k) - w^(k-1), y^(k-1) := gradient f(w_k) - gradient f(w_(k-1))$
+  ]
+)
+
+Notice that this step-size is not defined for the first iteration when $k = 0$. In this case, we just choose $alpha_0 = 1/L$ to perform a regular gradient descent before using the Barzilai-Borwein step for the following iterations.
+
+=== Exact line search
+
+Both adaptative step method we showed previously were _inexact_ step size. Here we will take a look at _exact_ step size. Here is how it is derived:
+
+Consider the objective value at the new iterate:
+
+#nonumeq(
+  $
+    f(x_(k+1)) = f(x_k - alpha_k gradient f(x_k)) := J(alpha_k)
+  $
+)
+
+This is a function of the step-size and can thus be minimized accordingly. After minimizing, we obtain the following expression:
+
+#nonumeq(
+  $
+    alpha_k = (gradient f(x_k)^top gradient f(x_k))/(gradient f(x_k)^top Sigma gradient f(x_k))
+  $
+)
+
+As said previously, the covariance matrix $Sigma$ may contain zero (or close to zero) eigenvalues. The quadratic form at the denominator can therefore be null in some cases. To avoid that in practice, we will precompute the denominator and we use $alpha_k = 1/L$ if it is smaller than a certain tolerance.
 
 == Projected Gradient Descent with Momentum
 
@@ -413,44 +477,18 @@ So our convergence rate is $cal(O)(1\/k^2)$, which is faster than gradient desce
 
 == Projected Randomized Coordinate Descent
 
-The last optimization model that we have been ask to implement is the Projected Randomized Coordinate Descent.
-In this algorithm, rather than computing the full gradient, we are going to compute one component of the gradient. We are then going to perform one gradient descent in this direction. A description of the method can be written as follow. 
-Considering $w_k in Delta$ it is then defined by : 
+The last optimization method that we will implement for this model is the Projected Randomized Coordinate Descent.
+In this algorithm, rather than computing the full gradient, we are going to compute one component of the gradient. We are then going to perform one gradient descent in this direction. A description of the method can be written as follows:\ 
+Considering $w_k in Delta$, the step is defined by : 
 #nonumeq($
            w_(k+1) = P_Delta (w_k - alpha [gradient f(w_k)]_(i_k)) e_(i_k)
          $)
 with  $i_k tilde cal(U){1,...,n}$
 
-We directly identify several major issue. The first one occurs when we update our weight $w_(k+1)$. Indeed by proceeding in such way, we only update one component of the vector corresponding to the index $i_k$. Then, projecting back onto the simplex induce a modification of the entire vector.
-To fix it we propose 2 options, the first one is the naive one as we are only going to rebalance our weight by modifying an other random weight such that $sum_i w_i = 1$. The second one is a bit more complex, in this version we are also going to take two random weight and trasnfer some value from one to another but this time more cleaverly. We are going to compute their gradient and direct ourself in the direction inducing the biggest variation in term of our objectif function. The update is performed in such a way that the sum of the two selected weights is preserved, ensuring that the iterate remains in the simplex.
-The second issue is related to the stopping criterion from our algorithm. From the beginning we only considered the stopping criterion $||w_(k+1) - w_k|| < epsilon$, but in a Randomized Coordinate descent, the modification of the weight is really small so that $||w_(k+1) - w_k||$ is always really small. So for this algorithm we considered a stopping criterion based on the function value,i.e $||f(w_(k+1)) - f(w_k)||< epsilon $. 
+We directly identify several major issues. The first one occurs when we update our weight $w_(k+1)$. Indeed by proceeding in such way, we only update one component of the vector corresponding to the index $i_k$ but projecting back onto the simplex induce a modification of the entire vector.
+To fix it we suggest two variants. The first one is the naive one as we are only going to rebalance our weight by modifying an other random weight such that $sum_i w_i = 1$. The second one is a bit more complex. In this version we are also going to take two random weight and we are going to compute their gradient to direct ourself in the direction inducing the biggest variation in term of our objectif function for these two coordinates. The update is performed in such a way that the sum of the two selected weights is preserved, ensuring that the iterate remains in the simplex.
+The second issue is related to the stopping criterion from our algorithm. From the beginning we only considered the stopping criterion $||w_(k+1) - w_k|| < epsilon$. However in the randomized coordinate descent, we may fall on a coordinate that won't move that much after the step. This will cause the algorithm to stop, even if the other coordinate are not optimized yet. Thus, the only stop criterion we will use is the by applying a limit on the number of iterations. 
 
-
-Is it smart to make deterministic choices for the coordinates? Is the answer the same in theory and in practice? Discuss it.
-
-
-== Adaptive step
-In this section we present 3 adaptive step that we have implemented in order to improve the performance of our models.
-
-=== Armijo backtracking line search
-In this method we are going to search for the step $alpha$ such that : 
-#nonumeq(
-  $
-    f(x- alpha gradient f(x)) <= f(x) - c alpha ||gradient f(x)||^2
-  $
-)
-=== Barzilai-Borwein step size
-Here we are going to look for the step $alpha$ which respect this equality : 
-#nonumeq($
-           alpha_k = (s^T s) / (s^T y) #h(2em) "with" s_(k-1) &= x_k - x_(k-1),\ y_(k-1) &= gradient f(x_k) - gradient f(x_k-1) 
-         $)
-
-=== Exact line search
-For a quadratic function we know that the optimal step is : 
-#nonumeq($
-           alpha_k = (||gradient f(w_k)||^2)/(gradient f(w_k)^T Sigma gradient f(w_k))
-         $)
-== Comparison of the 3 models
 
 
 = Non-smooth Model
