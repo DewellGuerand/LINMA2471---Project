@@ -416,14 +416,7 @@ The more detailed algorithm is described as follows :
   kind: "algorithm",
   supplement: [Algorithm],
   caption: [Projected Gradient Descent with Momentum],
-)[
-  #set align(left)
-  #set par(first-line-indent: 0em)
-  #block(
-    width: 100%,
-    inset: 10pt,
-    stroke: 0.5pt + black,
-  )[
+  frame()[
     *Input:* $w_0, gamma, beta$ \
     *Output:* approximate solution $w_N$
     
@@ -436,7 +429,7 @@ The more detailed algorithm is described as follows :
     #h(2em) $w_(k+1) = P_Delta (w_k - gamma m_(k+1))$ \
     *end for*
   ]
-]
+)
 
 However, with this algorithm (especially with a fixed $beta$), the rate of convergence has the same order $cal(O)(1/k)$ as the projected gradient descent in the worst-case scenario.\
 A better version of this algorithm in the context of convex and smooth functions is the _Nesterov's Accelerated Gradient Method_, whose algorithm is described below:
@@ -445,14 +438,7 @@ A better version of this algorithm in the context of convex and smooth functions
   kind: "algorithm",
   supplement: [Algorithm],
   caption: [Nesterov's accelerated Gradient Method],
-)[
-  #set align(left)
-  #set par(first-line-indent: 0em)
-  #block(
-    width: 100%,
-    inset: 10pt,
-    stroke: 0.5pt + black,
-  )[
+  frame()[
     *Input:* $w_0, L$ \
     *Init:* $w_(-1) = w_0, alpha = 1/L, lambda_0 = beta_0 = 0$\
     *Output:* approximate solution $w_N$
@@ -463,7 +449,7 @@ A better version of this algorithm in the context of convex and smooth functions
     #h(2em) $lambda_(k+1) <-- (1 + sqrt(1 + 4 lambda^2_k))/(2), quad beta_(k+1) <-- (lambda_k - 1)/(lambda_(k+1))$ \
     *end for*
   ]
-]
+)
 
 This gives us this theoretical bound:
 
@@ -524,20 +510,33 @@ In the next sections, we will present the three methods we will implement on thi
 
 == Projected Subgradient Method
 
-In the projected subgradient method, instead of using the gradient of the functionwe will try to use what socalled an subgradient that we define as : 
-Given a $overline(x) in RR^n$, we say that a vector $f(overline(x))$ is a subgradient of $f$ at $overline(x)$ when : 
-#nonumeq($
-           f(y) >= f(overline(x)) + <g(overline(x)) , y - overline(x)> #h(2em) forall y in RR^n
-         $)
+The subgradient method is simply a generalization of the gradient method for non-differentiable function where we can still get access to a subgradient. Let us first derive an expression for the subgradient:
 
-The projected _subdradient_ descent is then defined as (given $w_0$) : 
-#nonumeq($
-           w_(k+1) = P_Omega (w_k - alpha_k g_k)
-         $)
+The only non-smooth part of the objective function is $h$, we will therefore find a subgradient for this part. This function is not differentiable at $w = w_"prev"$. The subgradient is thus described by:
 
-Intuitively for non-smooth function, the gradient may not be well defined everywhere so we generalize the notion of gradient by introducing subgradient so that it becomes exactly defined in every points.     
+#nonumeq(
+  $
+    partial h(w) = cases(-&c quad &"if" w < w_"prev", &0 quad &"if" w = w_"prev", &c quad &"if" w > w_"prev")
+  $
+)
 
-From what we have seen in the course, for a constant step size, we know that 
+and the subgradient of $f$ is simply the sum of the gradient of $g$ and the subgradient of $h$.
+
+We can now describe the following algorithm for the Projected Subgradient Method:
+
+#figure(
+  kind: "algorithm",
+  supplement: [Algorithm],
+  caption: [Projected Subgradient Method],
+  frame()[
+    *Input:* $w_0, alpha$ \
+    *Output:* approximate solution $w_N$
+    
+    *for* $k = 0, 1, dots, N - 1$ *do* \
+    #h(2em) $w_(k+1) <-- P_(Delta)(w_k - alpha partial f(w_k))$\
+    *end for*
+  ]
+)
 
 == Proximal Gradient Descent
 
