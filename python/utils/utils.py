@@ -20,7 +20,7 @@ def simplex_projection(v):
     w = np.maximum(v + theta, 0)
     return w
 
-def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2})$', method_name='method', save_dir=None , metric_used='iterate'):
+def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2})$', method_name='method', save_dir=None , metric_used='iterate' , f_ref=None):
     """
     Plot convergence analysis with 3 separate figures.
     
@@ -48,6 +48,8 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
         plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$\|x_{k+1} - x_k\|$ (empirical)')
     elif metric_used  == 'function':
         plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$f(x_{k+1}) - f(x_k)$ (empirical)')
+    elif metric_used == 'function_with_ref':
+        plt.loglog(iterations, metric, 'b-', linewidth=1.5, label=r'$f(x_{k}) - f^*$ (empirical)')
     else :
         raise ValueError("metric must be 'iterate' or 'function'")
     plt.xlabel('Iteration $k$', fontsize=12)
@@ -62,7 +64,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
 
     # Plot 2: Objective value gap
     plt.figure(figsize=(8, 5))
-    f_star = obj_values[-1]  # Approximate f* with final value
+    f_star = f_ref  # Approximate f* with final value
     obj_gap = obj_values[:-1] - f_star  # Remove last element (it's 0)
     iterations_obj = np.arange(1, len(obj_gap) + 1, dtype=float)
     
@@ -129,7 +131,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
 
 def measure_iteration_complexity(method_class, method_params, model, w0, tolerances, 
                                   theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$',
-                                  method_name='method', save_dir=None, max_iter=10000 , metrics = None):
+                                  method_name='method', save_dir=None, max_iter=10000 , metrics = None , f_ref = None):
     """
     Measure iteration complexity by re-running optimization for each tolerance.
     
@@ -150,7 +152,7 @@ def measure_iteration_complexity(method_class, method_params, model, w0, toleran
     Returns:
         dict with 'tolerances' and 'iterations' arrays
     """
-    from methods import IteratePerformanceIndicator, ValuePerformanceIndicator
+    from methods import IteratePerformanceIndicator, ValuePerformanceIndicator , ValuePerformanceIndicator_with_ref
     
     
     iterations_list = []
@@ -165,6 +167,8 @@ def measure_iteration_complexity(method_class, method_params, model, w0, toleran
             performance_indicator = IteratePerformanceIndicator()
         elif metrics == 'function':
             performance_indicator = ValuePerformanceIndicator()
+        elif metrics == 'function_with_ref':
+            performance_indicator = ValuePerformanceIndicator_with_ref(f_ref=f_ref)
         else:
             performance_indicator = IteratePerformanceIndicator()  # default
         method = method_class(params, performance_indicator=performance_indicator)
@@ -339,7 +343,7 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
 
 
 
-def plot_subgradient_complexity(model, w0, f_ref, D, M, epsilons, max_iter=100000,
+def plot_subgradient_complexity(model, w0, f_ref, M, epsilons, max_iter=100000,
                                  method_name='Subgradient', save_dir=None):
     """
     Plot iteration complexity vs precision ε for Projected Subgradient Method.
@@ -421,44 +425,3 @@ def plot_subgradient_complexity(model, w0, f_ref, D, M, epsilons, max_iter=10000
     return {'epsilons': valid_epsilons, 'iterations': iterations_to_reach}
 
 
-def estimate_subgradient_constants(model, w0, n_samples=100):
-    """
-    Estimate D (diameter) and M (subgradient bound) for the problem.
-    
-    Args:
-        model: NonSmoothMarkowitzModel instance
-        w0: a feasible point
-        n_samples: number of random points to sample for M estimation
-    
-    Returns:
-        D: estimated diameter of simplex (theoretical: sqrt(2) for unit simplex)
-        M: estimated bound on ||subgradient||
-    """
-    n = len(w0)
-    
-    # D = diameter of simplex = max ||w - v|| for w,v in Δ
-    # For the unit simplex, D = sqrt(2) (distance between vertices)
-    D = np.sqrt(2)
-    
-    # M = max ||g|| where g is a subgradient
-    # Sample random feasible points and compute subgradient norms
-    subgrad_norms = []
-    
-    for _ in range(n_samples):
-        # Random point on simplex
-        w = np.random.dirichlet(np.ones(n))
-        g = model.subgradient(w)
-        subgrad_norms.append(np.linalg.norm(g))
-    
-    # Also check at w0 and some vertices
-    subgrad_norms.append(np.linalg.norm(model.subgradient(w0)))
-    
-    # Check a few vertices
-    for i in range(min(n, 10)):
-        w_vertex = np.zeros(n)
-        w_vertex[i] = 1.0
-        subgrad_norms.append(np.linalg.norm(model.subgradient(w_vertex)))
-    
-    M = np.max(subgrad_norms) * 1.1  # Add 10% safety margin
-    
-    return D, M

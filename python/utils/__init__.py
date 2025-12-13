@@ -7,7 +7,6 @@ from .utils import (
     compare_methods,
     measure_iteration_complexity,
     plot_subgradient_complexity,
-    estimate_subgradient_constants,
 
     
 )
@@ -18,7 +17,6 @@ __all__ = [
     "compare_methods",
     "measure_iteration_complexity",
     "plot_subgradient_complexity",
-    "estimate_subgradient_constants",
     
     
 ]
