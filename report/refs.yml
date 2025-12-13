@@ -28,3 +28,10 @@ subgradient:
   title: "Subgradient Methods"
   url: "https://web.stanford.edu/class/ee364b/lectures/subgrad_method_notes.pdf"
   access-date: 2025-12-13
+
+
+newton_kkt:
+  type: web
+  title: "Newton's Method Constrained Optimization"
+  url: "https://won-j.github.io/M1399_000200-2021fall/lectures/22-newton/newton_constr.html"
+  access-date: 2025-12-13
