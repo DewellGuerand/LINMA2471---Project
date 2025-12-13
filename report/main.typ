@@ -486,6 +486,21 @@ In the next sections, we will present the three methods we will implement on thi
 
 == Projected Subgradient Method
 
+In the projected subgradient method, instead of using the gradient of the functionwe will try to use what socalled an subgradient that we define as : 
+Given a $overline(x) in RR^n$, we say that a vector $f(overline(x))$ is a subgradient of $f$ at $overline(x)$ when : 
+#nonumeq($
+           f(y) >= f(overline(x)) + <g(overline(x)) , y - overline(x)> #h(2em) forall y in RR^n
+         $)
+
+The projected _subdradient_ descent is then defined as (given $w_0$) : 
+#nonumeq($
+           w_(k+1) = P_Omega (w_k - alpha_k g_k)
+         $)
+
+Intuitively for non-smooth function, the gradient may not be well defined everywhere so we generalize the notion of gradient by introducing subgradient so that it becomes exactly defined in every points.     
+
+From what we have seen in the course, for a constant step size, we know that 
+
 == Proximal Gradient Descent
 
 Instead of having to rely on the subgradient of $h$ in our algorithm, we can use the _proximal gradient method_. We define the proximal operator for $h$ given a step-size $t$ by:

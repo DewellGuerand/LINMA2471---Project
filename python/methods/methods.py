@@ -158,6 +158,13 @@ class IteratePerformanceIndicator(PerformanceIndicator):
     def evaluate(self, w_new, w_old, model):
         return np.linalg.norm(w_new - w_old)
     
+class ValuePerformanceIndicator_with_ref(PerformanceIndicator):
+    def __init__(self, f_ref):
+        self.f_ref = f_ref
+
+    def evaluate(self, w_new, w_old, model):
+        return np.abs(model.f(w_new) - self.f_ref)
+    
 
 
 

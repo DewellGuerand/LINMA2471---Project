@@ -338,6 +338,127 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
 
 
 
+
+def plot_subgradient_complexity(model, w0, f_ref, D, M, epsilons, max_iter=100000,
+                                 method_name='Subgradient', save_dir=None):
+    """
+    Plot iteration complexity vs precision ε for Projected Subgradient Method.
     
+    For each ε, runs subgradient with α = ε/M² and counts iterations to reach ε-accuracy.
     
+    Theoretical complexity: T ≥ D²M²/ε² to achieve ε-accuracy.
     
+    Args:
+        model: NonSmoothMarkowitzModel instance
+        w0: initial point
+        f_ref: reference optimal value f*
+        D: diameter of feasible set
+        M: bound on subgradient norm
+        epsilons: array of target accuracies to test
+        max_iter: maximum iterations per run
+        method_name: name for saving files
+        save_dir: directory to save figures
+    """
+    from methods import ProjectedSubgradientMethod, ValuePerformanceIndicator , ValuePerformanceIndicator_with_ref
+    
+    iterations_to_reach = []
+    valid_epsilons = []
+    
+    print(f"=== Plot 2: Complexity vs precision ε ===")
+    print(f"Parameters: D = {D:.4f}, M = {M:.4f}")
+    
+    for eps in epsilons:
+        # Set step size α = ε/M²
+        alpha = eps / (M**2)
+        
+        method = ProjectedSubgradientMethod({
+            'step_size': alpha,
+            'step_size_rule': 'constant',
+            'max_iter': max_iter,
+            'tol': eps,  # Don't stop early based on tol
+        }, ValuePerformanceIndicator_with_ref(f_ref=f_ref))
+        
+        result = method.optimize(model, w0.copy())
+        
+        # Find first iteration where min_{k≤t} f(w_k) - f_ref ≤ ε
+        if result['converged'] : 
+            iterations_to_reach.append(result['iterations'])
+            valid_epsilons.append(eps)
+            print(f"  ε={eps:.2e}: reached in {result['iterations']} iterations")
+    
+    valid_epsilons = np.array(valid_epsilons)
+    iterations_to_reach = np.array(iterations_to_reach)
+    # Create save directory if specified
+    if save_dir is not None:
+        os.makedirs(save_dir, exist_ok=True)
+    
+    # ========== Plot 2: Complexity vs precision ε ==========
+    plt.figure(figsize=(10, 6))
+    
+    # Empirical
+    plt.loglog(valid_epsilons, iterations_to_reach, 'bo-', linewidth=2, markersize=8,
+               label='Empirical iterations')
+    
+    # Theoretical: T ∝ 1/ε² - scaled to pass through first empirical point
+    # Scale factor: iterations_to_reach[0] / (1/valid_epsilons[0]²)
+    scale_factor = iterations_to_reach[0] * (valid_epsilons[0]**2)
+    theoretical_complexity = scale_factor / (valid_epsilons**2)
+    plt.loglog(valid_epsilons, theoretical_complexity, 'r--', linewidth=2,
+               label=r'Theory: $O(1/\varepsilon^2)$')
+    
+    plt.xlabel(r'Target accuracy $\varepsilon$', fontsize=12)
+    plt.ylabel(r'Iterations $T(\varepsilon)$', fontsize=12)
+    plt.title('Subgradient Iteration Complexity', fontsize=13)
+    plt.legend(fontsize=10)
+    plt.grid(True, alpha=0.3, which='both')
+    plt.gca().invert_xaxis()  # Smaller ε on the right
+    plt.tight_layout()
+    
+    if save_dir is not None:
+        plt.savefig(os.path.join(save_dir, f'{method_name}_complexity_vs_epsilon.png'), dpi=150, bbox_inches='tight')
+    plt.show()
+    
+    return {'epsilons': valid_epsilons, 'iterations': iterations_to_reach}
+
+
+def estimate_subgradient_constants(model, w0, n_samples=100):
+    """
+    Estimate D (diameter) and M (subgradient bound) for the problem.
+    
+    Args:
+        model: NonSmoothMarkowitzModel instance
+        w0: a feasible point
+        n_samples: number of random points to sample for M estimation
+    
+    Returns:
+        D: estimated diameter of simplex (theoretical: sqrt(2) for unit simplex)
+        M: estimated bound on ||subgradient||
+    """
+    n = len(w0)
+    
+    # D = diameter of simplex = max ||w - v|| for w,v in Δ
+    # For the unit simplex, D = sqrt(2) (distance between vertices)
+    D = np.sqrt(2)
+    
+    # M = max ||g|| where g is a subgradient
+    # Sample random feasible points and compute subgradient norms
+    subgrad_norms = []
+    
+    for _ in range(n_samples):
+        # Random point on simplex
+        w = np.random.dirichlet(np.ones(n))
+        g = model.subgradient(w)
+        subgrad_norms.append(np.linalg.norm(g))
+    
+    # Also check at w0 and some vertices
+    subgrad_norms.append(np.linalg.norm(model.subgradient(w0)))
+    
+    # Check a few vertices
+    for i in range(min(n, 10)):
+        w_vertex = np.zeros(n)
+        w_vertex[i] = 1.0
+        subgrad_norms.append(np.linalg.norm(model.subgradient(w_vertex)))
+    
+    M = np.max(subgrad_norms) * 1.1  # Add 10% safety margin
+    
+    return D, M

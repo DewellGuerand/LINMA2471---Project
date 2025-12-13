@@ -6,6 +6,9 @@ from .utils import (
     simplex_projection,
     compare_methods,
     measure_iteration_complexity,
+    plot_subgradient_complexity,
+    estimate_subgradient_constants,
+
     
 )
 
@@ -14,5 +17,8 @@ __all__ = [
     "plot_convergence",
     "compare_methods",
     "measure_iteration_complexity",
+    "plot_subgradient_complexity",
+    "estimate_subgradient_constants",
+    
     
 ]
