@@ -306,7 +306,7 @@ The algorithm is described as follows:
   ]
 )
 
-Here--as well as for the other methods--multiple stopping criterion can be used. We can either, as described above, stop after a certain number of iterations, or we could stop after reaching a certain precision (either on the objective value as well as the iterates values). Altough we do not have theoretical results that can improve the convergence of the method, we have actually a lower-bound on the number of iterations to reach a certain precision if we take the right step-size. In fact, here we have a smooth objective function $f$ with a smoothness constant $L = lambda_(max)(Sigma)$. In this case , we can take the step size to be:
+Here--as well as for the other methods--multiple stopping criterion can be used. We can either, as described above, stop after a certain number of iterations, or we could stop after reaching a certain precision (either on the objective value as well as the iterates values). Altough we do not have theoretical results that can improve the convergence of the method, we have actually a lower-bound on the number of iterations to reach a certain precision if we take the right step size. In fact, here we have a smooth objective function $f$ with a smoothness constant $L = lambda_(max)(Sigma)$. In this case , we can take the step size to be:
 
 #nonumeq(
   $
@@ -329,11 +329,11 @@ Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $c
 
 == Adaptive step for Projected Gradient Descent
 
-The projected gradient method we just presented used a fixed step-size. We can however improve the convergence of this method by using _adaptive steps_. In this section, we will present three adaptive step size that we will implement to, hopefully, obtain better performances. Note, however, that those step-size were originally designed for unconstrained problem. In practice, they also work quite well in the projected case as we will see later with numerical results.
+The projected gradient method we just presented used a fixed step size. We can however improve the convergence of this method by using _adaptive steps_. In this section, we will present three adaptive step size that we will implement to, hopefully, obtain better performances. Note, however, that those step size were originally designed for unconstrained problem. In practice, they also work quite well in the projected case as we will see later with numerical results.
 
 === Armijo backtracking line search
 
-The first adaptative step-size method we will implement is the _Armijo Line Search_. This method start with a candidate new iterate and decreases the step size until a condition is satisfied. The algorithm is described as follows:
+The first adaptative step size method we will implement is the _Armijo Line Search_. This method start with a candidate new iterate and decreases the step size until a condition is satisfied. The algorithm is described as follows:
 
 #figure(
   kind: "algorithm",
@@ -342,7 +342,7 @@ The first adaptative step-size method we will implement is the _Armijo Line Sear
   frame()[
       *Input:* $w_k, c in (0, 1), rho in (0, 1), alpha_0 > 0$ \
       *Init:* $k := 0$\
-      *Output:* Step-size $alpha_k$ for PGD
+      *Output:* Step size $alpha_k$ for PGD
       
       #v(0.5em)
       
@@ -357,7 +357,7 @@ This method has several advantages. First of all, it does not require the Lipsch
 
 === Barzilai-Borwein step size
 
-Until now, we never used second order information in the model. We may be tempted to implement the Newton's method instead of a Gradient Descent but it requires computing the inverse of the hessian $Sigma$. In practice, it is expensive and sometimes (likely to be the case here) the hessian is singular. The Barzilai-Borwein method, applied to the Gradient Descent, aims to find a step-size $alpha_k$ that approximates the Newton step. Here is the description of this method:
+Until now, we never used second order information in the model. We may be tempted to implement the Newton's method instead of a Gradient Descent but it requires computing the inverse of the hessian $Sigma$. In practice, it is expensive and sometimes (likely to be the case here) the hessian is singular. The Barzilai-Borwein method, applied to the Gradient Descent, aims to find a step size $alpha_k$ that approximates the Newton step. Here is the description of this method:
 
 
 #figure(
@@ -366,12 +366,12 @@ Until now, we never used second order information in the model. We may be tempte
   caption: [Barzilai-Borwein Method (Least-Square version)],
   frame()[
       *Input:* $w_k, w_(k-1)$ \
-      *Output:* Step-size $alpha_k := (s^(k-1)^top s^(k-1))/(s^(k-1)^top y^(k-1))$\
+      *Output:* Step size $alpha_k := (s^(k-1)^top s^(k-1))/(s^(k-1)^top y^(k-1))$\
       where $s^(k-1) := w^(k) - w^(k-1), y^(k-1) := gradient f(w_k) - gradient f(w_(k-1))$
   ]
 )
 
-Notice that this step-size is not defined for the first iteration when $k = 0$. In this case, we just choose $alpha_0 = 1/L$ to perform a regular gradient descent before using the Barzilai-Borwein step for the following iterations.
+Notice that this step size is not defined for the first iteration when $k = 0$. In this case, we just choose $alpha_0 = 1/L$ to perform a regular gradient descent before using the Barzilai-Borwein step for the following iterations.
 
 === Exact line search
 
@@ -385,7 +385,7 @@ Consider the objective value at the new iterate:
   $
 )
 
-This is a function of the step-size and can thus be minimized accordingly. After minimizing, we obtain the following expression:
+This is a function of the step size and can thus be minimized accordingly. After minimizing, we obtain the following expression:
 
 #nonumeq(
   $
@@ -529,18 +529,57 @@ We can now describe the following algorithm for the Projected Subgradient Method
   supplement: [Algorithm],
   caption: [Projected Subgradient Method],
   frame()[
-    *Input:* $w_0, alpha$ \
+    *Input:* $w_0, alpha_k$ \
     *Output:* approximate solution $w_N$
     
     *for* $k = 0, 1, dots, N - 1$ *do* \
-    #h(2em) $w_(k+1) <-- P_(Delta)(w_k - alpha partial f(w_k))$\
+    #h(2em) $w_(k+1) <-- P_(Delta)(w_k - alpha_k partial f(w_k))$\
     *end for*
   ]
 )
 
+@subgradient We will now discuss the step size for this method. If we denote $D := max_(w, v in Delta) ||w - v||_2$ the diameter of the simplex and $M >= ||partial f(w_k)||$ the bound on the subgradient, we obtain the following inequality:
+
+$
+  min_(k = 0, dots, T) f(x_i) - f^star <= (D^2 + M^2 sum_(k=1)^(T) alpha_k^2)/(2sum_(k=1)^(T) alpha_k)
+$<eq:subgd_step_inequality>
+
+We now want to know for what sequence of $alpha_k$ the righthand side of @eq:subgd_step_inequality is minimized. This term is convex and symmetric in $alpha_1, dots, alpha_T$ so the optimum is reached when all the $alpha_k$ are equal ($alpha_k := alpha$). The right term thus simplifies to:
+
+#nonumeq(
+  $
+    (R^2 + M^2 T alpha^2)/(2T alpha)
+  $
+)
+
+which is minimized when $alpha = (R)/(M sqrt(T))$. With this step size, we now want to determine the value $T(epsilon)$ to obtain a certain precision $epsilon$. We have:
+
+#nonumeq(
+  $
+    min_(k = 0, dots, T) f(x_i) - f^star <= (M R)/(sqrt(T(epsilon))) <= epsilon
+  $
+)
+
+We therefore have that $T(epsilon) >= (M^2 R^2)/(epsilon^2) tilde cal(O)(1\/epsilon^2)$. Plugging that in the step size $alpha$:
+
+#nonumeq(
+  $
+    alpha <= epsilon/M^2
+  $
+)
+
+
+This step size guarantees us to converge in $cal(O)(1\/epsilon^2)$ iterations to obtain an $epsilon$-accuracy solution. However, this convergence rate is quite bad. Even though this is the best we can theoretically do, we observe that choosing a diminishing step size offers better performances in practice. Additionally to the constant step size we just presented, we will therefore also implement the following diminishing step size:
+
+#nonumeq(
+  $
+    alpha_k <= epsilon/(M^2 sqrt(k))
+  $
+)
+
 == Proximal Gradient Descent
 
-Instead of having to rely on the subgradient of $h$ in our algorithm, we can use the _proximal gradient method_. We define the proximal operator for $h$ given a step-size $t$ by:
+Instead of having to rely on the subgradient of $h$ in our algorithm, we can use the _proximal gradient method_. We define the proximal operator for $h$ given a step size $t$ by:
 
 #nonumeq(
   $
@@ -572,7 +611,7 @@ Even though this looks like we just reformulated the optimization problem, in so
 )
 
 In our case, we have $h(w) = phi(w - w_"prev")$. It is easy to adapt the previous formula to this case\
-In the unconstrained case, given a fixed step-size $t <= 1/L$ (where $L$ is the smoothness constant of $g$), we have the following convergence result:
+In the unconstrained case, given a fixed step size $t <= 1/L$ (where $L$ is the smoothness constant of $g$), we have the following convergence result:
 
 #nonumeq(
   $

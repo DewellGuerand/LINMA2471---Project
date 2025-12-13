@@ -22,3 +22,9 @@ prox_slides:
   title: "Proximal Gradient Slides"
   url: "https://www.stat.cmu.edu/~ryantibs/convexopt/lectures/prox-grad.pdf"
   access-date: 2025-12-12
+
+subgradient:
+  type: web
+  title: "Subgradient Methods"
+  url: "https://web.stanford.edu/class/ee364b/lectures/subgrad_method_notes.pdf"
+  access-date: 2025-12-13
