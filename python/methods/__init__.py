@@ -21,7 +21,7 @@ from .methods import (
     ProjectedSubgradientMethod,
     ProximalGradientMethod,
     ProximalGradientMethod_fast,
-    InteriorPointMethod,
+    InteriorPointMethodLongStep,
 )
 
 __all__ = [
@@ -44,5 +44,5 @@ __all__ = [
     "ProjectedSubgradientMethod",
     "ProximalGradientMethod",
     "ProximalGradientMethod_fast",
-    "InteriorPointMethod",
+    "InteriorPointMethodLongStep",
 ]

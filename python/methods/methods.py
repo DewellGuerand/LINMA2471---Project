@@ -883,128 +883,179 @@ class ProximalGradientMethod_fast(OptimizationMethod):
         return np.sign(x) * np.maximum(np.abs(x) - threshold, 0)
 
 
-class InteriorPointMethod(OptimizationMethod):
+class InteriorPointMethodLongStep(OptimizationMethod):
+    """
+    Long-step path-following interior-point method (Lecture 9).
+
+    While mu > mu_final:
+        mu <- (1-theta) mu
+        perform damped Newton steps until delta_mu(w) <= tau
+    """
+
     def __init__(self, parameters, performance_indicator: PerformanceIndicator):
-        super().__init__("InteriorPoint", parameters, performance_indicator)
-        self.mu = parameters.get("mu", 10)  # Initial barrier parameter
-        self.mu_decay = parameters.get("mu_decay", 0.5)  # Decay factor for mu
-        self.max_iter = parameters.get("max_iter", 1000)
+        super().__init__("InteriorPointLongStep", parameters, performance_indicator)
+
+        self.epsilon = parameters.get("epsilon", 1e-8)
+
+        # Long-step parameters (flexible)
+        self.tau = parameters.get("tau", 0.25)                 # target proximity
+        self.theta = parameters.get("theta", 0.2)              # any (0,1)
+        self.mu0 = parameters.get("mu0", 1.0)
+
+        self.max_outer_iter = parameters.get("max_iter", 200)
         self.max_inner_iter = parameters.get("max_inner_iter", 50)
-        self.tol = parameters.get("tol", 1e-6)
-        self.inner_tol = parameters.get("inner_tol", 1e-8)
+        self.inner_tol = parameters.get("inner_tol", 1e-12)
+
+        # For stopping rule (theory uses nu; for simplex you can take nu=n)
+        self.nu = parameters.get("nu", None)
+
         self.metric = []
         self.time = []
         self.obj_value = []
 
     def optimize(self, model, w0):
-        # Reset history for each optimization run
         self.metric = []
         self.time = []
         self.obj_value = []
-        
-        n = w0.shape[0]
-        w_new = w0.copy()
-        
-        # Ensure initial point is strictly feasible (interior of simplex)
-        w_new = np.clip(w_new, 1e-8, 1 - 1e-8)
-        w_new = w_new / np.sum(w_new)
-        self.obj_value.append(model.f(w_new))
-        
-        mu = self.mu
-        
-        t_start = time.time()
-        for iter in range(self.max_iter):
-            w_old = w_new.copy()
-            
-            # Solve barrier subproblem with current mu using Newton's method
-            for inner_iter in range(self.max_inner_iter):
-                w_prev_inner = w_new.copy()
-                w_new = self._newton_step(model, w_new, mu, n)
-                
-                if np.linalg.norm(w_new - w_prev_inner) < self.inner_tol:
-                    break
-            
-            # Decrease barrier parameter
-            mu = mu * self.mu_decay
-            
-            self.obj_value.append(model.f(w_new))
-            
-            # Record cumulative time since start
-            self.time.append(time.time() - t_start)
 
-            convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
-            self.metric.append(convergence_value)
-            
-            if convergence_value < self.tol:
-                return {
-                    "sol": w_new,
-                    "value": model.f(w_new),
-                    "iterations": iter + 1,
-                    "converged": True,
-                    "metric": self.metric,
-                    "time": self.time,
-                    "obj_value": self.obj_value,
-                }
+        n = w0.size
+        nu = self.nu if self.nu is not None else n  # simplex barrier parameter
+
+        # strictly feasible init
+        w = np.clip(w0, 1e-10, None)
+        w /= np.sum(w)
+
+        mu = float(self.mu0)
+        mu_final = self.epsilon * (1.0 - self.tau) / nu  # from short-step theory (still fine here)
+
+        t0 = time.time()
+
+        # --- Initialization: move close to central path for mu0 (delta_mu <= tau) ---
+        w = self._restore_proximity(model, w, mu, self.tau)
+
+        outer = 0
+        while mu > mu_final and outer < self.max_outer_iter:
+            w_old = w.copy()
+
+            # decrease barrier parameter (any theta in (0,1))
+            mu *= (1.0 - self.theta)
+
+            # long-step: restore proximity using (possibly many) damped Newton steps
+            w = self._restore_proximity(model, w, mu, self.tau)
+
+            # bookkeeping
+            self.obj_value.append(model.f(w))
+            self.time.append(time.time() - t0)
+
+            conv = self.performance_indicator.evaluate(w, w_old, model)
+            self.metric.append(conv)
+
+            outer += 1
 
         return {
-            "sol": w_new,
-            "value": model.f(w_new),
-            "iterations": self.max_iter,
-            "converged": False,
+            "sol": w,
+            "value": model.f(w),
+            "iterations": outer,
+            "converged": mu <= mu_final,
             "metric": self.metric,
             "time": self.time,
             "obj_value": self.obj_value,
         }
 
-    def _newton_step(self, model, w, mu, n):
-        """Perform one Newton step for the barrier subproblem."""
-        # Barrier function: f(w) - mu * sum(log(w_i))
-        # Gradient: grad_f - mu * (1/w)
-        # Hessian: H_f + mu * diag(1/w^2)
-        
+    # ---------------- Core long-step routines ----------------
+
+    def _restore_proximity(self, model, w, mu, tau):
+        """
+        Perform damped Newton steps until delta_mu(w) <= tau (or max_inner_iter).
+        Damping is the self-concordant choice: step = 1/(1+delta). :contentReference[oaicite:1]{index=1}
+        """
+        for _ in range(self.max_inner_iter):
+            dw, delta = self._newton_direction_and_decrement(model, w, mu)
+
+            if delta <= tau:
+                break
+
+            # self-concordant damped Newton step size
+            step = 1.0 / (1.0 + delta)  # :contentReference[oaicite:2]{index=2}
+
+            # fraction-to-boundary (keep w > 0)
+            alpha = 1.0
+            while np.any(w + alpha * step * dw <= 0):
+                alpha *= 0.5
+                if alpha < 1e-16:
+                    break
+
+            w_next = w + 0.99 * alpha * step * dw
+            w_next = np.clip(w_next, 1e-14, None)
+            w_next /= np.sum(w_next)
+
+            if np.linalg.norm(w_next - w) < self.inner_tol:
+                w = w_next
+                break
+
+            w = w_next
+
+        return w
+
+    def _newton_direction_and_decrement(self, model, w, mu):
+        """
+        Compute Newton direction for minimizing:
+            phi_mu(w) = f(w) + mu * (-sum log w_i)
+        subject to:
+            1^T w = 1
+
+        Returns:
+            dw : Newton direction satisfying A dw = 0
+            delta : Newton decrement (local norm of step)
+        """
+        n = w.size
+
         grad_f = model.gradient(w)
         H_f = model.hessian(w)
-        
-        # Barrier gradient and Hessian
-        barrier_grad = grad_f - mu / w
-        barrier_hess = H_f + mu * np.diag(1 / (w ** 2))
-        
-        # Solve Newton system with equality constraint sum(w) = 1
-        # Using KKT system: [H, A^T; A, 0] [dw; nu] = [-grad; 0]
+
+        # barrier gradient/Hessian
+        grad = grad_f - mu / w
+        H = H_f + mu * np.diag(1.0 / (w**2))
+
         A = np.ones((1, n))
-        
-        # Build KKT matrix
-        KKT = np.zeros((n + 1, n + 1))
-        KKT[:n, :n] = barrier_hess
-        KKT[:n, n] = A.T.flatten()
-        KKT[n, :n] = A.flatten()
-        
-        # RHS
+
+        KKT = np.block([
+            [H, A.T],
+            [A, np.zeros((1, 1))]
+        ])
+
         rhs = np.zeros(n + 1)
-        rhs[:n] = -barrier_grad
-        rhs[n] = 0  # Already on simplex
-        
-        # Solve
+        rhs[:n] = -grad
+
         try:
             sol = np.linalg.solve(KKT, rhs)
             dw = sol[:n]
         except np.linalg.LinAlgError:
-            # Fallback to gradient step if Newton fails
-            dw = -0.01 * barrier_grad
-        
-        # Line search to stay feasible (w > 0)
-        alpha = 1.0
-        while np.any(w + alpha * dw <= 0) and alpha > 1e-10:
-            alpha *= 0.5
-        
-        w_new = w + 0.9 * alpha * dw  # 0.9 to stay strictly interior
-        w_new = np.clip(w_new, 1e-10, None)
-        w_new = w_new / np.sum(w_new)  # Normalize to simplex
-        
-        return w_new
+            # fallback (rare): small projected gradient-like direction
+            dw = -0.01 * (grad - np.mean(grad))  # keeps sum(dw)=0 approximately
+
+        # Newton decrement: delta^2 = dw^T H dw  (also = -grad^T dw since A dw = 0)
+        delta2 = float(dw @ (H @ dw))
+        delta = np.sqrt(max(delta2, 0.0))
+
+        return dw, delta
 
     def iterate(self, model, w):
-        # Single iteration is not well-defined for interior point
-        # Use one Newton step with current mu
-        n = w.shape[0]
-        return self._newton_step(model, w, self.mu, n)
+        """
+        One 'outer' long-step iteration is not a single Newton step.
+        We'll interpret iterate() as: take ONE damped Newton step for current mu0.
+        """
+        mu = float(self.mu0)
+        dw, delta = self._newton_direction_and_decrement(model, w, mu)
+        step = 1.0 / (1.0 + delta)
+
+        alpha = 1.0
+        while np.any(w + alpha * step * dw <= 0):
+            alpha *= 0.5
+            if alpha < 1e-16:
+                break
+
+        w_new = w + 0.99 * alpha * step * dw
+        w_new = np.clip(w_new, 1e-14, None)
+        w_new /= np.sum(w_new)
+        return w_new
