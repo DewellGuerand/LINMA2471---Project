@@ -1029,3 +1029,10 @@ Here are the LLMs we used to help us in this project. Note that no AIs were used
 - Gave the project assignment for context and asked multiple questions to summarize and interpret some methods for understanding them.
 
 - Asked questions about convergence rates
+
+== GitHub Repository
+
+To collaborate, we used a GitHub repository available at this link:
+
+#show link: set text(blue)
+#link("https://github.com/DewellGuerand/LINMA2471---Project")
