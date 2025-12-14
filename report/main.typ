@@ -949,8 +949,8 @@ We also implemented the Fast Proximal gradient which also converge in a single i
 )
 
 We then see that it converges in less iterations. However, the time per iteration is larger for the accelerated version: 
-#figure(image(
-  "../figures/Proximal_Gradient_vs_Fast_comparison_computational_cost.svg", width: 80%),
+#figure(
+  image("../figures/Proximal_Gradient_vs_Fast_comparison_computational_cost.svg", width: 80%),
   caption: [Time per iteration for Fast and Classic Proximal Gradient]
 )
 
@@ -959,19 +959,19 @@ We then see that it converges in less iterations. However, the time per iteratio
 
 Finally, we will perform a similar analysis for the Long-step Path-following Interior point method. Here we have first plotted the objective function : 
 
-#figure(image(
-  "../figures/InteriorPoint_LongStep_objective_value.svg", width: 80%),
+#figure(
+  image("../figures/InteriorPoint_LongStep_objective_value.svg", width: 80%),
   caption: [$f(x_k)$ vs iteration]
 )
 
 On this graph, we can see that it quickly converges to the optimal value. However, even though the convergence rate is impressive, we have to take into account the cost-per-iteration which is quite high for this method:
 
-#figure(image(
-  "../figures/InteriorPoint_LongStep_time_per_iteration.svg"
+#figure(
+  image("../figures/InteriorPoint_LongStep_time_complexity.svg", width: 80%),
+  caption: [Time per iteration (ms)]
+  )
 
-),caption: [Time per iteration (ms)])
-
-Here, we see that the time-per-iteration is around $2.75s$ which is huge. This is likely due to the high dimensionality of the model. Because of this, this method is not well-suited for this case. 
+Here, we plotted the elapsed time to reach convergence for this method as the number of stocks $n$ increases. We see that the time complexity is about $cal(O)(n^2)$. In practice, this method takes too much time to be considered a suitable method for this problem. 
 
 == Influence of parameters on the portfolio :
 
@@ -986,7 +986,7 @@ As we mentionned previously, the parameter $c$ controls the sensitivity with res
 Here, we see that the higher the transaction cost, the higher the number of selected assets. This is due to the fact that we used a uniform reference portfolio, for which we do not want to get far away when $c$ is large. When $c$ is really small, we are allowed to change the portfolio considerably, which is why the model will try to invest in a single asset that looks promising.
 
 #figure(
-  image("../figures/portfolio_turnover_vs_transaction_cost.svg"),
+  image("../figures/portfolio_turnover_vs_transaction_cost.svg", width: 80%),
   caption: [Turnover vs $c$]
 )
 
