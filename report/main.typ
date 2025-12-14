@@ -24,9 +24,6 @@
 /////////////////////
 #set text(hyphenate: false)
 #set enum(numbering: "1.")
-#set page(
-  margin: (x: 3em)
-)
 
 
 //////////////////////
@@ -45,13 +42,13 @@ The aim of this report is thus to compare different methods for both models by a
 
 = Data
 
-As said in the introduction, we will work on historical data sampled from the `S&P500` index. The dataset is described in a `.csv` file where we have access to the name of the different stocks, the date and the open, close and low/high prices at that date. We are actually only interested in the date, name and close prices in this dataset. In fact we are actually interested in finding the average return vector $mu$ and the corresponding covariance matrix of returns $Sigma$. The first step was to extract the close prices as a matrix where each row corresponds to a different date and each column corresponds to a different stock's name. We then had to compute the returns at each date. At a time $t$, the return $r_t$ is given by:
+For both models, we will build them based on historical data sampled from the `S&P500` index. The dataset is described in a `.csv` file where we have access to the name of the different stocks, the date and the open, close and low/high prices at that date #footnote([Note that the data only contains business days so two consecutive dates are not necessarily consecutive days.]). We are actually only interested in the date, name and close prices in this dataset. In fact we are actually interested in finding the average return vector $mu$ and the corresponding covariance matrix of returns $Sigma$. The first step was to extract the close prices as a matrix where each row corresponds to a different date and each column corresponds to a different stock's name. We then had to compute the returns at each date. At a time $t$, the return $r_t$ is given by:
 
 
 #nonumeq($r_t = (p_t - p_(t-1))\/p_(t-1)$)
 
 
-The return $mu$ is then simply given by the average of the returns with respect to time, for each assets. The covariance matrix $Sigma$ is also simply given by the covariance matrix of the return matrix. A strong property of (sample) covariance matrices is that they are always square, symmetric and positive semi-definite. This property is mandatory to be able to use strong theoretical results for convergence because it makes our objective function convex (quadratic function with PSD matrix).
+The return $mu$ is then simply given by the average of the returns with respect to time, for each assets. The covariance matrix $Sigma$ is also simply given by the covariance matrix of the return matrix. A strong property of (sample) covariance matrices is that they are always square, symmetric and positive semi-definite. This property is mandatory to be able to use strong theoretical results for convergence because it makes our objective function convex.
 
 In our implementation, we also included a feature to select only $n$ stocks within all the available stocks. This will allow us to compare the computational costs of the diverse methods as the dimension of the variable increases.
 
@@ -178,7 +175,17 @@ The projection on the simplex is used by every method presented in this report, 
     #nonumeq($cal(L)(w, theta, alpha) = &1/2 sum_i (w_i - v_i)^2 - theta(sum_i w_i -1) \ &- sum_i alpha_i w_i$)
 
     where $theta in RR$ and $alpha in RR^n$ are the Lagrange multiplier associated with the equality and nonnegativity constraints respectively.
+  ]
+)
 
+// Trick to number frame with the same previous number
+#counter(figure.where(kind: "derivation")).update(n => n - 1)
+
+#figure(
+  kind: "derivation",
+  supplement: [Derivation],
+  caption: [Projection operator on the simplex (cont.)],
+  frame()[
     We now impose the KKT conditions @kkt:
 
     1. Stationarity:
@@ -236,17 +243,7 @@ The projection on the simplex is used by every method presented in this report, 
         sum_(i: v_i + theta > 0) v_i + theta = sum_(i = n - k + 1)^(n) v_((i)) + theta = sum_(i = n - k + 1)^(n) v_((i)) + k theta
       $,
     )
-  ],
-)
-
-// Trick to number frame with the same previous number
-#counter(figure.where(kind: "derivation")).update(n => n - 1)
-
-#figure(
-  kind: "derivation",
-  supplement: [Derivation],
-  caption: [(cont.)],
-  frame()[
+ 
     This gives us:
     #nonumeq(
       $
@@ -665,7 +662,7 @@ which thus gives us a convergence rate of $cal(O)(1\/k^2)$ or $cal(O)(1\/sqrt(ep
 
 == Long-Step Path-Following Interior-Point method
 
-The _Long-Step Path-Following Interior-Point method_ (which we will denote IPM for simplicity) is a second-order method for solving convex optimization problems. The idea is to include the inequality constraints  in the objective with barrier functions (often logarithmic barriers) and also introduce a _barrier parameter_ which we will denote by $t$ that multiplies the original objective function. We then solve this problem to obtain a solution $x^(star)(t)$ which depends on the barrier parameter. The path ${x^(star)(t) : t > 0}$ is called the _central path_ and as $t->infinity$, we have that $x^(star)(t) -> x^*$. Given a generic convex barrier problem, the long-step variant of IPM is described as follows:
+The _Long-Step Path-Following Interior-Point method_ is a second-order method for solving convex optimization problems. The idea is to include the inequality constraints  in the objective with barrier functions (often logarithmic barriers) and also introduce a _barrier parameter_ which we will denote by $t$ that multiplies the original objective function. We then solve this problem to obtain a solution $x^(star)(t)$ which depends on the barrier parameter. The path ${x^(star)(t) : t > 0}$ is called the _central path_ and as $t->infinity$, we have that $x^(star)(t) -> x^*$. Given a generic convex barrier problem, the long-step variant of IPM is described as follows:
 
 #figure(
   kind: "algorithm",
@@ -797,7 +794,7 @@ The first experiment we performed was to compute the empirical number of iterati
 
  
 #figure(
-  image("../figures/Classical_Projected_Gradient_true_iteration_complexity.svg", width: 90%),
+  image("../figures/Classical_Projected_Gradient_true_iteration_complexity.svg", width: 80%),
   caption: [Number of iterations vs. $epsilon$ for PGD]
 )<fig:PGD_iteration_complexity>
 
@@ -806,7 +803,7 @@ As we can see on @fig:PGD_iteration_complexity, the complexity of the PGD method
 Now as we have mentionned previously, we have tried several adaptive step sizes. Here are the results we obtained : 
 
 #figure(
-  image("../figures/Classical_Projected_Gradient_step_size_comparison_objectif_value.svg", width: 90%),
+  image("../figures/Classical_Projected_Gradient_step_size_comparison_objectif_value.svg", width: 80%),
   caption: [$f(x_k)$ vs. $k$ for the different adaptive step sizes ($epsilon = 10^(-8)$)]
 )<fig:PGD_step_sizes>
 
@@ -814,7 +811,7 @@ From @fig:PGD_step_sizes, the adaptive step size method offering the best perfor
 
 #figure(
   grid(
-    image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.svg", width: 90%),
+    image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.svg", width: 80%),
     table(
       columns: 4,
       stroke: none,
@@ -838,14 +835,14 @@ For this method, we will compare both versions of the _PGD with Momentum_ presen
 We will first analyze, as before, the number of iterations to reach convergence for different $epsilon$ and compare both methods.
 
 #figure(
-  image("../figures/Classical_Projected_Gradient___true_iteration_complexity.svg", width: 90%),
+  image("../figures/Classical_Projected_Gradient___true_iteration_complexity.svg", width: 80%),
   caption: [Number of iterations vs. $epsilon$ for PGD with Momentum]
 )<fig:Momentum_iteration_complexity>
 
 On @fig:Momentum_iteration_complexity, we see that both curves are strictly below their respective theoretical rate. We also notice that the Nesterov's method slightly better than the classic momentum no matter the value of $epsilon$. To further compare those methods, we will also look at the value of the objective function as a function of the iterations.
 
 #figure(
-  image("../figures/Comparison_Momentum_Methods_objectif_value.svg", width: 90%),
+  image("../figures/Comparison_Momentum_Methods_objectif_value.svg", width: 80%),
   caption: [$f(x_k)$ vs. $k$ for Momentum and Nesterov's Momentum ($epsilon = 10^(-8)$)]
 )<fig:Momentum_objective_value>
 
@@ -856,7 +853,7 @@ Again, on @fig:Momentum_objective_value we clearly see that the Nesterov's Momen
 For this method, we will take a look at the difference between the objective value at step $k$ and the optimal value $f^star$
 
 #figure(
-  image("../figures/Projected_Randomized_Coordinate_Descent_iteration_method_comparison_objective_gap.svg", width:90%),
+  image("../figures/Projected_Randomized_Coordinate_Descent_iteration_method_comparison_objective_gap.svg", width: 80%),
   caption: [$f(x_k) - f^star$ vs. $k$ ($"max_iter" = 10^4$)]
 )<fig:coordinate_value_diff>
 
@@ -867,7 +864,7 @@ We can observe that, even after $10^4$ iterations, none of the two methods reach
 We will now compare all the methods shown above by plotting the objective value to observe the convergence.
 
 #figure(
-  image("../figures/Projected_Methods_Comparison_Best_ones_objectif_value.svg", width: 90%),
+  image("../figures/Projected_Methods_Comparison_Best_ones_objectif_value.svg", width: 80%),
   caption: [$f(x_k)$ vs. $k$ for all the methods ($epsilon = 10^(-8)$)]
 )<fig:objective_value_all_smooth_methods>
 
@@ -876,7 +873,7 @@ On @fig:objective_value_all_smooth_methods, we see that the Projected Gradient m
 #figure(
   grid(
     image(
-      "../figures/Projected_Methods_Comparison_Best_ones_comparison_computational_cost.svg"),
+      "../figures/Projected_Methods_Comparison_Best_ones_comparison_computational_cost.svg", width: 80%),
     table(
       columns: 4,
       stroke: none,
@@ -898,7 +895,7 @@ We see that PGD with Barzilai-Borwein step and the Nesterov's momentum methods o
 
 We will now interpet the effect of the parameter $lambda$ on the smooth Markowitz model with our best algorithm (i.e Projected gradient with Barzilai-Borwein adaptive step).
 #figure(
-  image("../figures/efficient_frontier_smooth.svg", width:90%),
+  image("../figures/efficient_frontier_smooth.svg", width: 80%),
   caption: [Efficient frontier for the Smooth Markowitz Model]
 )
 
@@ -907,97 +904,93 @@ For initial values of $lambda in {0.1 , 0.5}$, we have a low-risk but also a low
 
 
 == Non-Smooth model
-In this part of the numerical analysis we have first taken a constant $c=0.01$ and $lambda=0.5$ in order to compare our models.  
+// In this part of the numerical analysis we have first taken a constant $c=0.01$ and $lambda=0.5$ in order to compare our models. 
+In this section, we will do similar numerical analysis, this time for the methods applied to the non-smooth model @eq:nonsmooth. 
+
 === Projected Subgradient descent
-Here we have plotted the error $||f(x_k) - f^*||$ in function of the iteration for different constant step that follow the upper bound previously computed. 
+We will start by analyzing the Subgradient method by first plotting the error $||f(x_k) - f^*||$ as a function of the iteration for different constant step sizes using the previously found rule $alpha = epsilon\/M^2$. 
 
 #figure(
-  image("../figures/Subgradient_constant_stepsize_comparison_objective_gap.svg" ),
+  image("../figures/Subgradient_constant_stepsize_comparison_objective_gap.svg", width: 80%),
   caption: [$||f(x_k) -f^*||$ vs iteration for several Constant Step $epsilon/M^2$]
-)
+)<fig:subgradient_objective_value>
 
-As we can see on this graph, as expected we see that the algorithm manage to obtain $||f(x_k) - f^*|| < epsilon$ with a constant step size of $epsilon/M^2$ for a number of iteration $T(epsilon)$. We also plotted the complexity curve here to verify that we observe numerically a complexity of $cal(O)(epsilon^(-2))$ : 
+As we can see on @fig:subgradient_objective_value, each curve has the same shape and the larger $epsilon$ is, the faster the convergence. 
+
+We also plotted the complexity curve here to verify that we observe numerically a complexity of $cal(O)(epsilon^(-2))$ : 
 
 
 #figure(
-  image("../figures/Subgradient_complexity_vs_epsilon.svg" ),
-  caption: [Iterations vs precision($epsilon$) for the Projected Subgradient]
+  image("../figures/Subgradient_complexity_vs_epsilon.svg", width: 80%),
+  caption: [Number of iterations vs. $epsilon$ for the Projected Subgradient]
 )
 
-By looking at the graph, we can confirm that it is in practice better than what we had computed analytically.
+By looking at the graph, we can confirm that the convergence rate is better than the theoretical one for this method.
 
-Then we also implemented an diminishing step size for the projected subgradient and we plotted the error with the correct objectif value : 
+Then we also implemented the diminishing step size for the projected subgradient and we plotted the error with the correct objectif value : 
 #figure(
-  image("../figures/Subgradient_diminishing_stepsize_comparison_objective_gap.svg" ),
+  image("../figures/Subgradient_diminishing_stepsize_comparison_objective_gap.svg", width: 80%),
   caption: [$||f(x_k) -f^*||$ vs iteration for several Constant Step $alpha$ (Tol :$10^(-6)$)]
 )
-From what we directly see, only two subgradient have converged. The one beginning with a initial step $alpha_0 = 0.01$ and the one with $0.001$. That come directly by the fact that their constant step size must be bigger than $epsilon/M^(2)$.
+From what we directly see, only two subgradient have converged. The one starting with an initial step $alpha_0 = 0.01$ and the one with $0.001$. Overall, we see that it does not outperform the constant step size version of this algorithm
 
 === Proximal gradient descent
 
-For the proximal descent, depsite using a constant step size of $1/L$ theoritically, we plotted$||f(x_k) -f^*||$ for several other step as with a constant step of $1/L$ our method was converging in 1 iteration and it was not interesting. 
+For the proximal descent, we will first plot the error on the objective value as a function of the iterations. The reason why we did not choose a step size of $1/L$ is because the method converged in one iteration and it was thus not interesting to plot it.
+#figure(
+  image("../figures/Proximal_Gradient_stepsize_comparison_objective_gap.svg", width: 80%),
+  caption: [$||f(x_k) -f^*||$ vs iteration for several step sizes])
 
+We directly see that for any step size we quickly converge towards the equilibrium which makes it for now the best method we have. 
+We also implemented the Fast Proximal gradient which also converge in a single iteration for $t = 1\/L$ so here is the comparison of the two objective function for a constant step size of $0.01$:
+#figure(
+  image("../figures/Proximal_Gradient_vs_Fast_objectif_value.svg", width: 80%),
+  caption: [$f(x_k)$ vs iteration for Fast and Classic Proximal Gradient ]
+)
+
+We then see that it converges in less iterations. However, the time per iteration is larger for the accelerated version: 
 #figure(image(
-  "../figures/Proximal_Gradient_stepsize_comparison_objective_gap.svg"
-
-),caption: [$||f(x_k) -f^*||$ vs iteration for several step size ])
-
-We directly see that for any step size we converge swiftly toward equilibrium which make it for now the best method we have. 
-We also implemented the Fast Proximal gradient which also converge in 1 iteration so here is the comparison of the two objective function for a constant step size of $0.01$
-#figure(image(
-  "../figures/Proximal_Gradient_vs_Fast_objectif_value.svg"
-
-),caption: [$f(x_k)$ vs iteration for Fast and normal Proximal Gradient ])
-
-We then see that it converge in less iteration but an other time the time for each iteration can not be let a side as we can see on this graph : 
-#figure(image(
-  "../figures/Proximal_Gradient_vs_Fast_comparison_computational_cost.svg"
-
-),caption: [Time per iteration (ms) for Fast and normal Proximal Gradient ])
+  "../figures/Proximal_Gradient_vs_Fast_comparison_computational_cost.svg", width: 80%),
+  caption: [Time per iteration for Fast and Classic Proximal Gradient]
+)
 
 
 === Long-step Path-following Interior-Point method 
 
-Finally, the Long-step Path-following Interior point method. Here we have plotted the objectif function aswell as the time per iteration : 
+Finally, we will perform a similar analysis for the Long-step Path-following Interior point method. Here we have first plotted the objective function : 
 
 #figure(image(
-  "../figures/InteriorPoint_LongStep_objective_value.svg"
+  "../figures/InteriorPoint_LongStep_objective_value.svg", width: 80%),
+  caption: [$f(x_k)$ vs iteration]
+)
 
-),caption: [$f(x_k)$ vs iteration])
+On this graph, we can see that it quickly converges to the optimal value. However, even though the convergence rate is impressive, we have to take into account the cost-per-iteration which is quite high for this method:
 
 #figure(image(
   "../figures/InteriorPoint_LongStep_time_per_iteration.svg"
 
-),caption: [Time per iteration (ms) ])
+),caption: [Time per iteration (ms)])
 
-We can conlude that it converge in few iteration but the time per iteration is tremendeous in comparison with the other methods. 
+Here, we see that the time-per-iteration is around $2.75s$ which is huge. This is likely due to the high dimensionality of the model. Because of this, this method is not well-suited for this case. 
 
-== Comparison of the model :
+== Influence of parameters on the portfolio :
 
-In this section we will try to interpet the influence of the parameter $c$, as we have juste talked about the influence of $lambda$. 
-As wwe have just mentionned earlier, the parameter $c$ is responsible of the part that take the transaction cost in our model. A higher $c$ mean that we have bigger transaction cost and a lower $c$ mean that we do not have many cost in transaction. Here we have plotted the number of assets that have a non zero wheight for different value of the parameter $c$. 
+In this section we will analyze and interpet the influence of the parameter $c$, just like we did for $lambda$ for the previous model. 
+As we mentionned previously, the parameter $c$ controls the sensitivity with respect to the transaction costs. A higher $c$ means that we consider larger transaction costs and vice-versa. Here we have plotted the number of assets for which we have a non-null weight for different value of the parameter $c$. 
 
 #figure(
-  image("../figures/portfolio_diversification_vs_transaction_cost.svg"),
-  caption: [Number of non zeros assets for several value of $c$]
+  image("../figures/portfolio_diversification_vs_transaction_cost.svg", width: 80%),
+  caption: [Number of non-zero assets for several value of $c$]
 )
+
+Here, we see that the higher the transaction cost, the higher the number of selected assets. This is due to the fact that we used a uniform reference portfolio, for which we do not want to get far away when $c$ is large. When $c$ is really small, we are allowed to change the portfolio considerably, which is why the model will try to invest in a single asset that looks promising.
 
 #figure(
   image("../figures/portfolio_turnover_vs_transaction_cost.svg"),
   caption: [Turnover vs $c$]
 )
 
-We directly see that for higher value of transaction cost, we diversificate our self an try to note modify our portfolio of action as it implies higher cost. The turnover highlight the same fact as it highlight how much our portfolio repartition has been modified. A low one mean that nearly nothing has changed and a bigger one mean that a lot of our portfolio has changed. 
-
-
-
-What comparisons could you make between the different methods? Is it always a fair choice?
-
-Can some methods be greatly improved compared to the theory?
-
-Are some of them disappointing? Do you have an explanation?
-
-In general, does a model (smooth or non-smooth) bring better solutions? What do you mean by better? Are the methods faster? Do the solutions have a particular structure? Is it normal?
+On this graph, we also plotted the _turnover_ of the portfolio. This essentially represents how much, in percentage, our portfolio changed with respect to our reference one. Again, we clearly see that this percentage drastically decreases as the transaction cost increases.
 
 = Conclusion
 

@@ -82,15 +82,7 @@
     columns: 2,
     paper: paper-size,
     // The margins depend on the paper size.
-    margin: if paper-size == "a4" {
-      (x: 41.5pt, top: 80.51pt, bottom: 89.51pt)
-    } else {
-      (
-        x: (50pt / 216mm) * 100%,
-        top: (55pt / 279mm) * 100%,
-        bottom: (64pt / 279mm) * 100%,
-      )
-    }
+    margin: 3em,
   )
 
   // Configure equation numbering and spacing.
