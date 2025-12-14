@@ -920,7 +920,7 @@ As we can see on this graph, as expected we see that the algorithm manage to obt
 
 
 #figure(
-  image("../figures/Subgradient_constant_stepsize_comparison_objective_gap.svg" ),
+  image("../figures/Subgradient_complexity_vs_epsilon.svg" ),
   caption: [Iterations vs precision($epsilon$) for the Projected Subgradient]
 )
 
@@ -972,6 +972,10 @@ Finally, the Long-step Path-following Interior point method. Here we have plotte
 
 We can conlude that it converge in few iteration but the time per iteration is tremendeous in comparison with the other methods. 
 
+== Comparison of the model :
+
+In this section we will try to interpet the influence of the parameter $c$, as we have juste talked about the influence of $lambda$. 
+As wwe have just mentionned earlier, the parameter $c$ is responsible of the part that take the transaction cost in our model. A higher $c$ mean that we have bigger transaction cost and a lower $c$ mean that we do not have many cost in transaction. 
 
 What comparisons could you make between the different methods? Is it always a fair choice?
 
