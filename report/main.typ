@@ -24,6 +24,9 @@
 /////////////////////
 #set text(hyphenate: false)
 #set enum(numbering: "1.")
+#set page(
+  margin: (x: 3em)
+)
 
 
 //////////////////////
@@ -783,41 +786,49 @@ We can simply compute:
 )
 
 = Numerical results
-== Smoot Model 
+== Smooth Model 
 
-Before diving into our numerical analysis, we specify that the reference and optimal value of our objective function ($f^*$), whether smooth or non-smooth, was precalculated using a solver from the library _cvxpy_
+Before diving into our numerical analysis, note that the reference and optimal value of our objective function ($f^*$) was precomputed using a solver from the library _cvxpy_ both in the smooth case as in the non-smooth case.
 
 === Projected Gradient descent
 
-As can be seen on the following graphs, the previously computed bound is respected, for increasing tolerence $epsilon$ and in fact is much better for bigger $epsilon$ : 
+The first experiment we performed was to compute the empirical number of iterations to achieve an $epsilon$-precision solution for many value of $epsilon$.
+
+ 
 #figure(
-  image("../figures/Classical_Projected_Gradient_true_iteration_complexity.png")
-)
+  image("../figures/Classical_Projected_Gradient_true_iteration_complexity.png", width: 90%),
+  caption: [Number of iterations vs. $epsilon$ for PGD]
+)<fig:PGD_iteration_complexity>
 
-Now as we have just mentionned before, we have tried several _adptive step size_, here are the results we obtained : 
-#figure(
-  image("../figures/Classical_Projected_Gradient_step_size_comparison_objectif_value.png")
-)
+As we can see on @fig:PGD_iteration_complexity, the complexity of the PGD method is way below the theoretical one. In fact, it even looks like that the iteration complexity is of order $cal(O)(1\/sqrt(epsilon))$, which shows that this method is performing way better than expected.
 
-From what we can see on these pictures, the adaptive step obtaining the best result in term of objectif function is the Barzilai-Borwein adaptive step. Note, however, that it induce a bigger mean time of iteration than the classical gradient descent.Despite the time for an iteration being bigger, we only need 7 iterations which mean an total time way bellow the total time of the other one. Indeed we obtained the following result for the total iteration, here we can observe the mean time for an unique iteration aswell as the number of iteration and also the standart deviation : 
+Now as we have mentionned previously, we have tried several adaptative step sizes. Here are the results we obtained : 
 
 #figure(
-  table(
-    columns: 4,
-    stroke: none,
+  image("../figures/Classical_Projected_Gradient_step_size_comparison_objectif_value.png", width: 90%),
+  caption: [Objective value $f(x_k)$ vs. $k$ for the different adaptative step sizes]
+)<fig:PGD_step_sizes>
 
-    table.header[][Mean ][Std][Iterations],
-    [Constant step size], [0.2044], [0.4038], [500],
-    [Exact Line search], [0.5080], [1.6201], [493],
-    [Backtracking Line Search],[0.4163],[0.4932],[500],
-    [Barzilai-Borwein Step Size],[0.4286],[0.4950],[7],
+From @fig:PGD_step_sizes, the adaptative step size method offering the best performance in term of convergence is the _Barzilai-Borwein_ adaptive step. Note, however, that it induces a bigger mean time per iteration than the fixed step size version. Despite the time per iteration being bigger, we only required 7 iterations to converge which mean that the total time is still way less for this adaptative step size than for the other. To illustrate this, we registered the time per iteration for each version to study the mean and the variance. Here are the results : 
+
+#figure(
+  grid(
+    image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.png", width: 100%),
+    table(
+      columns: 4,
+      stroke: none,
+      align: left,
+      table.header[][Mean $["ms"]$][Std $["ms"]$][Iterations],
+      [Constant step size], [0.2044], [0.4038], [500],
+      [Exact Line search], [0.5080], [1.6201], [493],
+      [Backtracking Line Search],[0.4163],[0.4932],[500],
+      [Barzilai-Borwein Step Size],[0.4286],[0.4950],[7],
+    ),
   ),
-  caption: [Time per iteration statistics (ms , tol =$10^(-8)$ , max_iter = $500$)],
-) <probe-a>
+  caption: [Time per iteration statistics]
+)<fig:PGD_time_per_iteration>
 
-#figure(
-  image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.png")
-)
+On @fig:PGD_time_per_iteration, we can further see how the _Barzilai-Borwein_ step clearly improves the convergence of this method.
 
 === Projected Gradient descent with momentum
 
