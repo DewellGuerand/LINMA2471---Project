@@ -5,7 +5,7 @@ This project implements and analyzes various optimization methods for solving th
 
 ---
 
-## 📋 Problem Description
+## Problem Description
 
 We study two variants of the Markowitz portfolio optimization problem:
 
@@ -115,16 +115,27 @@ Or open `python/main.ipynb` directly in VS Code.
 | Method | Description |
 |--------|-------------|
 | `ProjectedGradientMethod` | Gradient descent with simplex projection |
-| `ProjectedGradientDescentMomentum` | Gradient descent with momentum |
-| `ProjectedRandomizedCoordinateDescent` | Coordinate descent (O(n) per iteration) |
-| `InteriorPointMethod` | Barrier method with Newton steps |
+| `ProjectedGradientDescentMomentum` | Heavy-ball momentum variant |
+| `ProjectedGradientDescentMomentum_Nesterov` | Nesterov accelerated gradient |
+| `ProjectedRandomizedCoordinateDescent` | Randomized coordinate descent (O(n) per iteration) |
 
 ### For Non-Smooth Model (Model 2)
 
 | Method | Description |
 |--------|-------------|
 | `ProjectedSubgradientMethod` | Subgradient method (constant/diminishing step) |
-| `ProximalGradientMethod` | Proximal gradient with soft-thresholding |
+| `ProximalGradientMethod` | ISTA: Proximal gradient with soft-thresholding |
+| `ProximalGradientMethod_fast` | FISTA: Accelerated proximal gradient |
+| `InteriorPointMethodLongStep` | Long-step path-following interior point method |
+
+### Step Size Strategies
+
+| Strategy | Description |
+|----------|-------------|
+| `ConstantStepSize` | Fixed step size (1/L or user-specified) |
+| `BacktrackingLineSearch` | Armijo backtracking line search |
+| `BarzilaiBorweinStepSize` | Barzilai-Borwein step size |
+| `ExactLineSearchQuadratic` | Exact line search for quadratic objectives |
 
 ---
 
@@ -141,9 +152,13 @@ From this data, we compute:
 
 ## Experiments
 
-The notebook contains experiments analyzing:
+The notebooks contain experiments analyzing:
 
-*TODO*: Add experiments
+1. **Convergence analysis**: Convergence rates of all methods on smooth/non-smooth models
+2. **Step size comparison**: Impact of different step size strategies (constant, backtracking, Barzilai-Borwein, exact line search)
+3. **Iteration complexity**: Number of iterations required to reach tolerance ε
+4. **Scalability**: Time to converge vs. problem size n (number of assets)
+5. **Method comparison**: Performance benchmarks across methods on real stock data
 
 ---
 
