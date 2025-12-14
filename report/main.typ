@@ -894,6 +894,7 @@ On @fig:objective_value_all_smooth_methods, we see that the Projected Gradient m
 We see that PGD with Barzilai-Borwein step and the Nesterov's momentum methods offers the best cost-per-iteration values. One may choose between one of those two for this problem, as they share overall similar performances.
 
 
+== Influence of $lambda$ on the solution
 We will now interpet the effect of the parameter $lambda$ on the smooth Markowitz model with our best algorithm (i.e Projected gradient with Barzilai-Borwein adaptive step).
 #figure(
   image("../figures/efficient_frontier_smooth.svg", width: 80%),
@@ -974,7 +975,7 @@ On this graph, we can see that it quickly converges to the optimal value. Howeve
 
 Here, we plotted the elapsed time to reach convergence for this method as the number of stocks $n$ increases. We see that the time complexity is about $cal(O)(n^2)$. In practice, this method takes too much time to be considered a suitable method for this problem. 
 
-== Influence of parameters on the portfolio :
+== Influence of $c$ on the solution :
 
 In this section we will analyze and interpet the influence of the parameter $c$, just like we did for $lambda$ for the previous model. 
 As we mentionned previously, the parameter $c$ controls the sensitivity with respect to the transaction costs. A higher $c$ means that we consider larger transaction costs and vice-versa. Here we have plotted the number of assets for which we have a non-null weight for different value of the parameter $c$. 
