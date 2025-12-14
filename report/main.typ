@@ -994,4 +994,18 @@ On this graph, we also plotted the _turnover_ of the portfolio. This essentially
 
 = Conclusion
 
-Summary.
+To conclude this project, we have seen a various number of technic in order to optimise the Smooth and Non-smooth version of the Markovitz problem. The two method for the two respective model that we could highlight as the best performing methods were the Projected Gradient method with adaptive step and the Proximal gradient descent. We also analysed the effect of the parameters $lambda$ and $c$ on the models and observed some interesting result, for instance the Efficient frontier with $lambda$ and the optimum asset allocation with $c$. 
+
+
+#pagebreak()
+
+#underline("Groupe Number") : 9 
+
+#underline("Students") : 
+- Guerand Dewell : Contributed to numerical analysis of methods and implementation
+- Lucas Ahou : Contributed to de redaction of the report and also to the implementation
+
+#underline("LLM") : Claude wrote the structure of the code in order to segregate correctly the sections
+
+
+
