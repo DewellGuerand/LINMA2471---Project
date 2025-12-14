@@ -902,7 +902,14 @@ We will now interpet the effect of the parameter $lambda$ on the smooth Markowit
 )
 
 From what we see on these plots, the efficient frontier has a concave curve. We can interpret that as higher return also mean higher risk which directly translate reality.
-For initial values of $lambda in {0.1 , 0.5}$, we have a low-risk but also a low return, increasing the $lambda$ directly yields a bigger return but also a bigger risk. Indeed, the bigger the lambda is the more we try to maximise our return. From the Efficient frontier we see that we have a saturation effect from $lambda = {2}$ to $lambda = {20}$. In terms of convergences, we see that for bigger lambda, we converge faster which is due to the fact that the second terms becomes dominant and induce a steeper objectif landscape.
+For initial values of $lambda in {0.1 , 0.5}$, we have a low-risk but also a low return, increasing the $lambda$ directly yields a bigger return but also a bigger risk. Indeed, the bigger the lambda is the more we try to maximise our return. From the Efficient frontier we see that we have a saturation effect from $lambda = 2$ to $lambda = 20$. We also wanted to analyze the convergence speed with respect to $lambda$:
+
+#figure(
+  image("../figures/lambda_convergence_gap.svg", width: 80%),
+  caption: [$f(x_k) - f*$  vs $k$ for different $lambda$]
+)
+
+In terms of convergence, we see that for bigger $lambda$'s, we converge faster. This is likely due to the fact that the second term becomes dominant and induces a steeper objective landscape.
 
 
 == Non-Smooth model
@@ -914,7 +921,7 @@ We will start by analyzing the Subgradient method by first plotting the error $|
 
 #figure(
   image("../figures/Subgradient_constant_stepsize_comparison_objective_gap.svg", width: 80%),
-  caption: [$||f(x_k) -f^*||$ vs iteration for several Constant Step $epsilon/M^2$]
+  caption: [$||f(x_k) -f^*||$ vs $k$ for several Constant Step $epsilon/M^2$]
 )<fig:subgradient_objective_value>
 
 As we can see on @fig:subgradient_objective_value, each curve has the same shape and the larger $epsilon$ is, the faster the convergence. 
@@ -934,7 +941,7 @@ Then we also implemented the diminishing step size for the projected subgradient
   image("../figures/Subgradient_diminishing_stepsize_comparison_objective_gap.svg", width: 80%),
   caption: [$||f(x_k) -f^*||$ vs iteration for several Constant Step $alpha$ (Tol :$10^(-6)$)]
 )
-From what we directly see, only two subgradient have converged. The one starting with an initial step $alpha_0 = 0.01$ and the one with $0.001$. Overall, we see that it does not outperform the constant step size version of this algorithm
+We observe that only two of the three methods have converged, the one starting with an initial step $alpha_0 = 0.01$ and the one with $0.001$. Overall, we see that it does not outperform the constant step size version of this algorithm.
 
 === Proximal gradient descent
 
@@ -959,14 +966,14 @@ We then see that it converges in less iterations. However, the time per iteratio
 
 === Long-step Path-following Interior-Point method 
 
-Finally, we will perform a similar analysis for the Long-step Path-following Interior point method. Here we have first plotted the objective function : 
+Finally, we will perform a similar analysis for the Long-step Path-following Interior point method. Here we have first plotted the objective function: 
 
 #figure(
   image("../figures/InteriorPoint_LongStep_objective_value.svg", width: 80%),
-  caption: [$f(x_k)$ vs iteration]
-)
+  caption: [$f(x_k)$ vs $k$]
+)<fig:IPM_objective_value>
 
-On this graph, we can see that it quickly converges to the optimal value. However, even though the convergence rate is impressive, we have to take into account the cost-per-iteration which is quite high for this method:
+On @fig:IPM_objective_value, we can see that it quickly converges to the optimal value. However, even though the convergence rate is impressive, we have to take into account the cost-per-iteration which is quite high for this method:
 
 #figure(
   image("../figures/InteriorPoint_LongStep_time_complexity.svg", width: 80%),
