@@ -81,7 +81,6 @@
   set page(
     columns: 2,
     paper: paper-size,
-    // The margins depend on the paper size.
     margin: 3em,
   )
 

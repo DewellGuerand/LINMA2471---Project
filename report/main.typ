@@ -71,21 +71,21 @@ The first model we will study is the _Smooth Markowitz model_. In this section, 
 
 == Model
 
-The _Smooth Markowitz model_ is mean-variance problem that was introduced by Markowitz@markowitz1952 in 1952. It is defined as follows:
+The _Smooth Markowitz model_ is a mean-variance problem that was introduced by Markowitz  in 1952@markowitz1952. It is defined as follows:
 
 $
   min_(w in Delta) f(w) = 1/2 w^top Sigma w - lambda w^top mu
 $ <eq:smooth>
 
 
-where $w in RR^n$, $Sigma in RR^n$ and $mu in RR^n$.\
-The vector of variables $w$ represents the _weights_ of our portfolio, i.e. the proportion of each assets that constitutes our portoflio. Because each component $w_i$ of $w$ represents a percentage of our portfolio, they must sum up to one in a realistic scenario. This is why we define the feasible set as the simplex:
+where $w in RR^n$, $Sigma in RR^(n times n)$ and $mu in RR^n$.\
+The vector of variables $w$ represents the _weights_ of our portfolio, i.e. the proportion of each assets that constitutes it. Because each component $w_i$ of $w$ represents a percentage of our portfolio, they must sum up to one in a realistic scenario. This is why we define the feasible set as the simplex:
 
 #nonumeq($Delta = {w in RR^n: w_i >= 0, bb(1)^top w = 1}$)
 
 The matrix $Sigma$ is the covariance matrix and $mu$ is the average vector of the returns available in the available dataset. Therefore, the model aims to do the following:
-1. The first term $1/2 w^top Sigma w$ represents the variance of the portfolio's return. Intuitively, we want to minimze it as this is a measure of risk. In fact, a highly variating portfolio return means we, a lot of time, will encounter negative results. Thus minimizing this term allows to have a more consistent portfolio.
-2. The second term $- lambda w^top mu$ is there to target a maximum average return, while still minimizing the variance with the presence of the first term. Without this second term, the solution for this problem will only try to create a consistent portfolio and will thus not make a lot of profit. The $lambda > 0$ constant is a hyperparameter which controls the risk. The bigger it is, the more the model will try to find a portfolio selection that maximizes the average return compared to minimizing the variance. Therefore, this parameter represents the risk we are willing to take before solving this problem. The greater it is, the higher the risk is.
+1. The first term $1/2 w^top Sigma w$ represents the variance of the portfolio's return. Intuitively, we want to minimize it as this is a measure of risk. In fact, a highly variating portfolio return we will often encounter very high returns, as well as very low ones which indicates an unstable portfolio. Thus minimizing this term allows to have more consistent returns.
+2. The second term $- lambda w^top mu$ is there to target a maximum average return while still minimizing the variance with the presence of the first term. Without this, the solution for this problem will only try to aim for consistent returns and will thus not make a lot of profit. The $lambda > 0$ constant is a hyperparameter which controls the risk. The bigger it is, the more the model will try to find a portfolio selection that maximizes the average return compared to minimizing the variance. Therefore, this parameter represents the risk we are willing to take before solving this problem. The greater it is, the higher the risk is.
 
 Now that we have seen an overview of this model and explained its meaning, we will discuss some properties of this model.
 
@@ -112,7 +112,7 @@ The reason why it is important is that the local minima of a convex problem is a
 Regarding those results and the implementation of the methods, we need to discuss some key properties of this model. More precisely, we need to derive the gradient and the hessian of the objective function, its smoothness constant as well as the projection operator on the simplex
 
 === Gradient and hessian of $f$
-We will simply derive the objective function $f$ with respect to $w$ to obtain the gradient:
+We will simply differentiate the objective function $f$ with respect to $w$ to obtain the gradient:
 #nonumeq(
   $
     gradient f(w) = Sigma w - lambda mu
@@ -172,9 +172,9 @@ The projection on the simplex is used by every method presented in this report, 
 
     We now define the Lagrangian of this problem as follows:
 
-    #nonumeq($cal(L)(w, theta, alpha) = &1/2 sum_i (w_i - v_i)^2 - theta(sum_i w_i -1) \ &- sum_i alpha_i w_i$)
+    #nonumeq($cal(L)(w, theta, alpha) = 1/2 sum_i (w_i - v_i)^2 - theta(sum_i w_i -1) - sum_i alpha_i w_i$)
 
-    where $theta in RR$ and $alpha in RR^n$ are the Lagrange multiplier associated with the equality and nonnegativity constraints respectively.
+    where $theta in RR$ and $alpha in RR^n$ are the Lagrange multipliers associated with the equality and nonnegativity constraints respectively.
   ]
 )
 
@@ -212,7 +212,7 @@ The projection on the simplex is used by every method presented in this report, 
       $,
     )
 
-    The second case shows that we do not violate any KKT conditions. We thus have:
+    The second case simply shows that we do not violate any KKT conditions. We thus have:
 
     #nonumeq(
       $
@@ -267,7 +267,7 @@ The number $k$--and thus the projection--can be implemented more efficiently usi
 #figure(
   kind: "algorithm",
   supplement: [Algorithm],
-  caption: [Projection computation],
+  caption: [Projection on the simplex],
   frame()[
     *Input*: Vector $v$ to project\
     *Output*: $P_(Delta)(v)$\
@@ -289,7 +289,7 @@ Given a point $w in Delta$, the idea is simply to perform a gradient descent ste
 where $alpha > 0$ is our step size. However, it is clear that there is no guarantee that this new point $z$ stays in the simplex after the step. We therefore will simply project this point on the simplex using @AlgorithmeProjection:
 
 #nonumeq($w^+ = P_(Delta)(z) = P_(Delta)(w - alpha gradient f(w))$)
-The algorithm is described as follows:
+The complete algorithm is described as follows:
 
 #figure(
   kind: "algorithm",
@@ -308,7 +308,7 @@ The algorithm is described as follows:
   ],
 )
 
-Here--as well as for the other methods--multiple stopping criterion can be used. We can either, as described above, stop after a certain number of iterations, or we could stop after reaching a certain precision (either on the objective value as well as the iterates values). Altough we do not have theoretical results that can improve the convergence of the method, we have actually a lower-bound on the number of iterations to reach a certain precision if we take the right step size. In fact, here we have a smooth objective function $f$ with a smoothness constant $L = lambda_(max)(Sigma)$. In this case , we can take the step size to be:
+Here (as well as for the other methods) multiple stopping criterions can be used. We can either, as described above, stop after a certain number of iterations, or we could stop after reaching a certain precision (either on the objective value as well as the iterate values). Altough we do not have theoretical results that can improve the convergence of the method, we have actually a lower-bound on the number of iterations to reach a certain precision if we take the right step size. In fact, here we have a smooth objective function $f$ with a smoothness constant $L = lambda_(max)(Sigma)$. In this case, we can take the step size to be:
 
 #nonumeq(
   $
@@ -320,22 +320,21 @@ Knowing that our function is also convex, we have the following convergence resu
 
 #nonumeq(
   $
-    f(w_k) - f(w_0) <= (L ||w_0 - w^star||^2)/(2k), quad forall k >= 1
+    f(w_k) - f^star <= (L ||w_0 - w^star||^2)/(2k) <= L/k, quad forall k >= 1
   $,
 )
 
-Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $cal(O)(1\/epsilon)$ to reach an $epsilon$-accuracy for the objective value. We indeed confirm our result numerically.
-
-
-
+where we used the fact that $||w_0 - w^star||^2 <= D^2 = 2$ where $D$ is the diameter of the simplex.\
+Hence, our method has a rate of $cal(O)(1\/k)$, which also means that we need $cal(O)(1\/epsilon)$ to reach an $epsilon$-accuracy for the objective value.
+We will later confirm this rate numerically.
 
 == Adaptive step for Projected Gradient Descent
 
-The projected gradient method we just presented used a fixed step size. We can however improve the convergence of this method by using _adaptive steps_. In this section, we will present three adaptive step size that we will implement to, hopefully, obtain better performances. Note, however, that those step size were originally designed for unconstrained problem. In practice, they also work quite well in the projected case as we will see later with numerical results.
+The projected gradient method we just presented used a fixed step size. We can however improve the convergence of this method by using _adaptive steps_. In this section, we will present three adaptive step sizes that we will implement to, hopefully, obtain better performances. Note, however, that those step size were originally designed for unconstrained problem. In practice, they also work quite well in the projected case as we will see later with numerical results.
 
 === Armijo backtracking line search
 
-The first adaptive step size method we will implement is the _Armijo Line Search_. This method start with a candidate new iterate and decreases the step size until a condition is satisfied. The algorithm is described as follows:
+The first adaptive step size method we will implement is the _Armijo Line Search_. This method starts with a candidate new iterate and decreases the step size until a condition is satisfied. The algorithm is described as follows:
 
 #figure(
   kind: "algorithm",
@@ -351,7 +350,7 @@ The first adaptive step size method we will implement is the _Armijo Line Search
     *Step 1:* $w^(+)_(k) := P_(Delta)(w_k - alpha_k gradient f(w_k))$\
     *Step 2:* \
     - If $f(w^(+)_k) <= f(w_k) - c alpha_k ||gradient f(w_k)||^2$: *return* $alpha_k$\
-    - Else: Set $alpha_(k+1) := rho dot alpha_k, k := k+1$, Go to *Step 1*
+    - Else: Set $alpha_(k+1) := rho alpha_k, k := k+1$, Go to *Step 1*
   ],
 )
 
@@ -377,7 +376,7 @@ Notice that this step size is not defined for the first iteration when $k = 0$. 
 
 === Exact line search
 
-Both adaptive step method we showed previously were _inexact_ step size. Here we will take a look at _exact_ step size. Here is how it is derived:
+Both adaptive step method we showed previously were _inexact_ step size. Here we will take a look at the _exact_ step size. Here is how it is derived:
 
 Consider the objective value at the new iterate:
 
@@ -401,17 +400,19 @@ As said previously, the covariance matrix $Sigma$ may contain zero (or close to 
 
 Here we are going to slightly modify the previous algorithm by introducing the notion of momentum.
 In our previous algorithm, we were not taking advantage of the gradient of the previous iterates, i.e. $gradient f(w_(k-1)) , gradient f(w_(k-2)),...,gradient f(w_(0))$. We could then introduce a momentum variable
-#nonumeq($ m_(k+1) = beta m_k + (1 - beta ) gradient f(w_k), #h(2em) "with" m_0 = 0 $)
+#nonumeq($ m_(k+1) = beta m_k + (1 - beta ) gradient f(w_k), #h(2em)$)
+with $beta in [0,1]$ and $m_0 = 0$.
+
 The projected momentum iterates becomes for an $w_k in Delta$
 #nonumeq(
   $
     w_(k+1) = P_Delta (w_k - gamma m_(k+1))
   $,
 )
-with $beta in [0,1]$
+
 
 Momentum increases the influence of recent gradients while gradually vanishing older ones, which often accelerates convergence.
-The more detailed algorithm is described as follows :
+The complete algorithm is described as follows :
 
 #figure(
   kind: "algorithm",
@@ -432,7 +433,7 @@ The more detailed algorithm is described as follows :
   ],
 )
 
-However, with this algorithm (especially with a fixed $beta$), the rate of convergence has the same order $cal(O)(1/k)$ as the projected gradient descent in the worst-case scenario.\
+However, with this algorithm (especially with a fixed $beta$), the rate of convergence has the same order $cal(O)(1\/k)$ as the projected gradient descent in the worst-case scenario.\
 A better version of this algorithm in the context of convex and smooth functions is the _Nesterov's Accelerated Gradient Method_, whose algorithm is described below:
 
 #figure(
@@ -476,9 +477,7 @@ with  $i_k tilde cal(U){1,...,n}$
 
 We directly identify several major issues. The first one occurs when we update our weight $w_(k+1)$. Indeed by proceeding in such way, we only update one component of the vector corresponding to the index $i_k$ but projecting back onto the simplex induce a modification of the entire vector.
 To fix it we suggest two variants. The first one is the naive one as we are only going to rebalance our weight by modifying an other random weight such that $sum_i w_i = 1$. The second one is a bit more complex. In this version we are also going to take two random weight and we are going to compute their gradient to direct ourself in the direction inducing the biggest variation in term of our objectif function for these two coordinates. The update is performed in such a way that the sum of the two selected weights is preserved, ensuring that the iterate remains in the simplex.
-The second issue is related to the stopping criterion from our algorithm. From the beginning we only considered the stopping criterion $||w_(k+1) - w_k|| < epsilon$. However in the randomized coordinate descent, we may fall on a coordinate that won't move that much after the step. This will cause the algorithm to stop, even if the other coordinate are not optimized yet. Thus, the only stop criterion we will use is the by applying a limit on the number of iterations.
-
-
+The second issue is related to the stopping criterion from our algorithm. From the beginning we only considered the stopping criterion $||w_(k+1) - w_k|| < epsilon$. However in the randomized coordinate descent, we may fall on a coordinate that won't move that much after the step. This will cause the algorithm to stop, even if the other coordinates are not optimized yet. Thus, the only stop criterion we will use is by applying a limit on the number of iterations.
 
 = Non-smooth Model
 
@@ -490,7 +489,7 @@ $
   min_(w in Delta) f(w) = 1/2 w^top Sigma w - lambda w^top mu + c||w - w_"prev"||_1
 $<eq:nonsmooth>
 
-In @eq:nonsmooth, we observe that the objective takes the same form as in @eq:smooth. However, there is an additional non-smooth term. This term extends the previous model by taking transaction costs into account. In realistic scenarios, buying or selling assets implies a cost which is proportional to the amount of traded assets. To represent this in the model, we add a term proportional to the $cal(l)_1$-distance between the current portfolio ($w$) and a reference one ($w_"prev"$):
+In @eq:nonsmooth, we observe that the objective takes the same form as in @eq:smooth. However, there is an additional non-smooth term. This term extends the previous model by taking transaction costs into account. In realistic scenarios, buying or selling assets implies a cost which is proportional to the amount of traded assets. To represent this in the model, we add a term proportional to the $cal(l)_1$-distance between the current portfolio $w$ and a reference one $w_"prev"$:
 
 #nonumeq(
   $
@@ -555,7 +554,7 @@ We now want to know for what sequence of $alpha_k$ the righthand side of @eq:sub
   $,
 )
 
-which is minimized when $alpha = (R)/(M sqrt(T))$. With this step size, we now want to determine the value $T(epsilon)$ to obtain a certain precision $epsilon$. We have:
+which is minimized when $alpha = (D)/(M sqrt(T))$. With this step size, we now want to determine the value $T(epsilon)$ to obtain a certain precision $epsilon$. We have:
 
 #nonumeq(
   $
@@ -572,7 +571,7 @@ We therefore have that $T(epsilon) >= (M^2 D^2)/(epsilon^2) tilde cal(O)(1\/epsi
 )
 
 
-This step size guarantees us to converge in $cal(O)(1\/epsilon^2)$ iterations to obtain an $epsilon$-accuracy solution. However, this convergence rate is quite bad. Even though this is the best we can theoretically do, we observe that choosing a diminishing step size offers better performances in practice. Additionally to the constant step size we just presented, we will therefore also implement the following diminishing step size:
+This step size guarantees us to converge in $cal(O)(1\/epsilon^2)$ iterations to obtain an $epsilon$-accuracy solution. However, this convergence rate is quite bad. Even though this is the best we can theoretically do, we may want to choose a diminishing step size to, hopefully, obtain better performances in practice. Additionally to the constant step size we just presented, we will therefore also implement the following diminishing step size:
 
 #nonumeq(
   $
@@ -674,7 +673,7 @@ The _Long-Step Path-Following Interior-Point method_ is a second-order method fo
 
     *while* $nu\/t_k > epsilon$ *do*\
 
-    #h(2em) $t_(k+1) <-- (1-theta)t_k$\
+    #h(2em) $t_(k+1) <-- t_k \/ (1-theta)$\
     #h(2em) *do* _Damped Newton-Steps_ *while* $delta_(t_(k+1))(x_(k+1)) > tau$\
     #h(2em) $k <- k+1$\
     *end while*
@@ -759,7 +758,7 @@ where $d_x$ is the Newton-Step's direction. Here are the expression of the diffe
   $,
 )
 
-To ensure feasibility of the Newton-Step and a strictly decreasing objective value, we have to damp the Newton-Step. Choosing a damping of $1/(1 + delta(x))$ satisfies those two properties. The Newton-Step is thus:
+To ensure feasibility of the Newton-Step and a strictly decreasing objective value, we have to damp the Newton steps. Choosing a damping of $1/(1 + delta(x))$ satisfies those two properties. The Newton step thus becomes:
 
 #nonumeq(
   $
@@ -767,7 +766,7 @@ To ensure feasibility of the Newton-Step and a strictly decreasing objective val
   $,
 )
 
-To compute the local norm $delta(x)$, we do *not* have to inverse the hessian. In fact, because the Newton-Step direction $d_x$ satisfies at $x_k$:
+To compute the local norm $delta(x)$, we do *not* have to inverse the hessian. In fact, because the Newton step direction $d_x$ satisfies at $x_k$:
 
 #nonumeq(
   $
@@ -786,7 +785,7 @@ We can simply compute:
 = Numerical results
 == Smooth Model 
 
-Before diving into our numerical analysis, note that the reference and optimal value of our objective function ($f^*$) was precomputed using a solver from the library _cvxpy_ both in the smooth case as in the non-smooth case.
+Before diving into our numerical analysis, note that the optimal value of our objective function $f^star$ was precomputed using a solver from the library `cvxpy` both in the smooth case as in the non-smooth case.
 
 === Projected Gradient descent
 
@@ -807,14 +806,15 @@ Now as we have mentionned previously, we have tried several adaptive step sizes.
   caption: [$f(x_k)$ vs. $k$ for the different adaptive step sizes ($epsilon = 10^(-8)$)]
 )<fig:PGD_step_sizes>
 
-From @fig:PGD_step_sizes, the adaptive step size method offering the best performance in term of convergence is the _Barzilai-Borwein_ adaptive step. Note, however, that it induces a bigger mean time per iteration than the fixed step size version. Despite the time per iteration being bigger, we only required 7 iterations to converge which mean that the total time is still way less for this adaptive step size than for the other. To illustrate this, we registered the time per iteration for each version to study the mean and the variance. Here are the results : 
+From @fig:PGD_step_sizes, the adaptive step size method offering the best performance in terms of convergence is the _Barzilai-Borwein_ adaptive step. Note, however, that it induces a bigger mean time per iteration than the fixed step size version. Despite the time per iteration being bigger, we only required 7 iterations to converge which mean that the total time is still way less for this adaptive step size than for the other. To illustrate this, we registered the time per iteration for each version to study the mean and the variance. Here are the results : 
 
 #figure(
   grid(
     image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.svg", width: 80%),
     table(
       columns: 4,
-      stroke: none,
+      fill: rgb(0, 180, 250, 30),
+      stroke: .1pt,
       align: left,
       table.header[][Mean $["ms"]$][Std $["ms"]$][Iterations],
       [Constant step size], [0.2044], [0.4038], [500],
@@ -876,7 +876,8 @@ On @fig:objective_value_all_smooth_methods, we see that the Projected Gradient m
       "../figures/Projected_Methods_Comparison_Best_ones_comparison_computational_cost.svg", width: 80%),
     table(
       columns: 4,
-      stroke: none,
+      fill: rgb(0, 180, 250, 30),
+      stroke: .1pt,
       align: left,
       table.header[][Mean [ms]][Std [ms]][Iterations],
       [PGD + Adaptive step], [0.2857], [0.4518], [7],
