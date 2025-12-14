@@ -928,7 +928,7 @@ By looking at the graph, we can confirm that it is in practice better than what 
 
 Then we also implemented an diminishing step size for the projected subgradient and we plotted the error with the correct objectif value : 
 #figure(
-  image("../figures/Subgradient_complexity_vs_epsilon.svg" ),
+  image("../figures/Subgradient_diminishing_stepsize_comparison_objective_gap.svg" ),
   caption: [$||f(x_k) -f^*||$ vs iteration for several Constant Step $alpha$ (Tol :$10^(-6)$)]
 )
 From what we directly see, only two subgradient have converged. The one beginning with a initial step $alpha_0 = 0.01$ and the one with $0.001$. That come directly by the fact that their constant step size must be bigger than $epsilon/M^(2)$.
@@ -975,7 +975,21 @@ We can conlude that it converge in few iteration but the time per iteration is t
 == Comparison of the model :
 
 In this section we will try to interpet the influence of the parameter $c$, as we have juste talked about the influence of $lambda$. 
-As wwe have just mentionned earlier, the parameter $c$ is responsible of the part that take the transaction cost in our model. A higher $c$ mean that we have bigger transaction cost and a lower $c$ mean that we do not have many cost in transaction. 
+As wwe have just mentionned earlier, the parameter $c$ is responsible of the part that take the transaction cost in our model. A higher $c$ mean that we have bigger transaction cost and a lower $c$ mean that we do not have many cost in transaction. Here we have plotted the number of assets that have a non zero wheight for different value of the parameter $c$. 
+
+#figure(
+  image("../figures/portfolio_diversification_vs_transaction_cost.svg"),
+  caption: [Number of non zeros assets for several value of $c$]
+)
+
+#figure(
+  image("../figures/portfolio_turnover_vs_transaction_cost.svg"),
+  caption: [Turnover vs $c$]
+)
+
+We directly see that for higher value of transaction cost, we diversificate our self an try to note modify our portfolio of action as it implies higher cost. The turnover highlight the same fact as it highlight how much our portfolio repartition has been modified. A low one mean that nearly nothing has changed and a bigger one mean that a lot of our portfolio has changed. 
+
+
 
 What comparisons could you make between the different methods? Is it always a fair choice?
 
