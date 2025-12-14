@@ -226,7 +226,4 @@
 
   // Display the paper's contents.
   body
-
-  // Display bibliography.
-  bibliography
 }

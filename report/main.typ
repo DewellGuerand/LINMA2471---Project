@@ -14,7 +14,6 @@
     ),
   ),
   index-terms: ("Scientific writing", "Typesetting", "Document creation", "Syntax"),
-  bibliography: bibliography("refs.yml", full: true),
   figure-supplement: [Fig.],
 )
 
@@ -1003,18 +1002,30 @@ On this graph, we also plotted the _turnover_ of the portfolio. This essentially
 
 = Conclusion
 
-To conclude this project, we have seen a various number of technic in order to optimise the Smooth and Non-smooth version of the Markovitz problem. The two method for the two respective model that we could highlight as the best performing methods were the Projected Gradient method with adaptive step and the Proximal gradient descent. We also analysed the effect of the parameters $lambda$ and $c$ on the models and observed some interesting result, for instance the Efficient frontier with $lambda$ and the optimum asset allocation with $c$. 
+To summarize, we have seen a various number of techniques in order to optimize the smooth and son-smooth version of the Markovitz problem. The two methods for both models that we could highlight as the best performing methods were respectively the Projected Gradient method with a Barzilai-Borwein adaptive step for the smooth model and the Proximal gradient descent for the non-smooth one. We also analyzed the effect of the parameters $lambda$ and $c$ on the optimal solution and highlighted some interesting results, for instance the efficient frontier when $lambda$ varies and the optimum asset allocation as $c$, the transaction cost, increases. 
 
+
+#bibliography("refs.yml", full: true)
 
 #pagebreak()
 
+
+= Organization for the project
 #underline("Groupe Number") : 9 
 
 #underline("Students") : 
-- Guerand Dewell : Contributed to numerical analysis of methods and implementation
-- Lucas Ahou : Contributed to de redaction of the report and also to the implementation
+- Guerand Dewell: Contributed to numerical analysis of methods and implementation
+- Lucas Ahou: Contributed to the redaction of the report and also to the implementation
 
-#underline("LLM") : Claude wrote the structure of the code in order to segregate correctly the sections
+== Usage of LLMs
+Here are the LLMs we used to help us in this project. Note that no AIs were used to write this report.
 
+=== Claude.ai
+- Gave the project assignment for context and asked to write a directory, classe and method templates to have a modular structure. 
 
+- Using Claude Opus 4.5 as an agent in VSCode, helped for debugging purposes as well as for code structure
 
+=== DeepSeek & ChatGPT
+- Gave the project assignment for context and asked multiple questions to summarize and interpret some methods for understanding them.
+
+- Asked questions about convergence rates
