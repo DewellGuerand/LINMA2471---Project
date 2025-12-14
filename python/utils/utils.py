@@ -203,7 +203,7 @@ def measure_iteration_complexity(method_class, method_params, model, w0, toleran
     
     plt.xlabel(r'Tolerance $\epsilon$', fontsize=12)
     plt.ylabel(r'Iterations $K(\epsilon)$', fontsize=12)
-    plt.title(f'Iteration Complexity (re-run per $\\epsilon$)', fontsize=13)
+    plt.title(f'Iteration Complexity', fontsize=13)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
     plt.gca().invert_xaxis()
@@ -215,7 +215,7 @@ def measure_iteration_complexity(method_class, method_params, model, w0, toleran
     return {'tolerances': valid_tolerances, 'iterations': iterations_arr}
     
 
-def compare_methods(results_dict, save_dir=None , method_name='method' , metric_used='iterate'):
+def compare_methods(results_dict, save_dir=None , method_name='method' , metric_used='iterate',f_ref=None):
     """
     Compare multiple optimization methods on 4 different plots.
     
@@ -266,7 +266,7 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
     
     # Find global f* (minimum across all methods)
     all_final_values = [np.array(result['obj_value'])[-1] for result in results_dict.values()]
-    f_star_global = min(all_final_values)
+    f_star_global = f_ref
     
     for i, (name, result) in enumerate(results_dict.items()):
         obj_values = np.array(result['obj_value'])
@@ -294,6 +294,11 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
     method_names = []
     mean_times = []
     std_times = []
+    median_times = []
+    min_times = []
+    max_times = []
+    total_times = []
+    total_iters = []
     
     for name, result in results_dict.items():
         time_values = np.array(result['time'])
@@ -301,10 +306,22 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
         method_names.append(name)
         mean_times.append(np.mean(time_per_iter))
         std_times.append(np.std(time_per_iter))
+        median_times.append(np.median(time_per_iter))
+        min_times.append(np.min(time_per_iter))
+        max_times.append(np.max(time_per_iter))
+        total_times.append(time_values[-1])
+        total_iters.append(len(time_per_iter))
     
     x_pos = np.arange(len(method_names))
     bars = plt.bar(x_pos, mean_times, yerr=std_times, capsize=5, 
                    color=[colors[i % len(colors)] for i in range(len(method_names))], alpha=0.7)
+    
+    # Add mean values on top of each bar
+    for i, (bar, mean_val, std_val) in enumerate(zip(bars, mean_times, std_times)):
+        height = bar.get_height() + std_val
+        plt.text(bar.get_x() + bar.get_width()/2., height + 0.01 * max(mean_times),
+                 f'{mean_val:.4f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
+    
     plt.xticks(x_pos, method_names, rotation=15, ha='right')
     plt.ylabel('Time per iteration (ms)', fontsize=12)
     plt.title('Computational Cost per Iteration', fontsize=13)
@@ -313,6 +330,21 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
     if save_dir is not None:
         plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_computational_cost.png'), dpi=150, bbox_inches='tight')
     plt.show()
+    
+    # Print detailed time statistics
+    print("\n" + "="*95)
+    print("TIME PER ITERATION STATISTICS (ms)")
+    print("="*95)
+    print(f"{'Method':<30} {'Mean':>10} {'Std':>10} {'Median':>10} {'Min':>10} {'Max':>10}")
+    print("-"*95)
+    for i, name in enumerate(method_names):
+        print(f"{name:<30} {mean_times[i]:>10.4f} {std_times[i]:>10.4f} {median_times[i]:>10.4f} {min_times[i]:>10.4f} {max_times[i]:>10.4f}")
+    print("="*95)
+    print(f"\n{'Method':<30} {'Total Time (s)':>15} {'Iterations':>12}")
+    print("-"*60)
+    for i, name in enumerate(method_names):
+        print(f"{name:<30} {total_times[i]:>15.4f} {total_iters[i]:>12d}")
+    print("="*60)
 
     #Plot 4:Objectif function value 
     plt.figure(figsize=(10, 6))

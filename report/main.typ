@@ -659,6 +659,107 @@ which thus gives us a convergence rate of $cal(O)(1\/k^2)$ or $cal(O)(1\/sqrt(ep
 Did you think of other methods? Why could they help solve the problem? What structure of the problem made you think of this method?
 
 = Numerical results
+== Smoot Model 
+
+Before diving into our numerical analysis, we specify that the reference and optimal value of our objective function ($f^*$), whether smooth or non-smooth, was precalculated using a solver from the library _cvxpy_
+
+=== Projected Gradient descent
+
+As can be seen on the following graphs, the previously computed bound is respected, for increasing tolerence $epsilon$ and in fact is much better for bigger $epsilon$ : 
+#figure(
+  image("../figures/Classical_Projected_Gradient_true_iteration_complexity.png")
+)
+
+Now as we have just mentionned before, we have tried several _adptive step size_, here are the results we obtained : 
+#figure(
+  image("../figures/Classical_Projected_Gradient_step_size_comparison_objectif_value.png")
+)
+
+From what we can see on these pictures, the adaptive step obtaining the best result in term of objectif function is the Barzilai-Borwein adaptive step. Note, however, that it induce a bigger mean time of iteration than the classical gradient descent.Despite the time for an iteration being bigger, we only need 7 iterations which mean an total time way bellow the total time of the other one. Indeed we obtained the following result for the total iteration, here we can observe the mean time for an unique iteration aswell as the number of iteration and also the standart deviation : 
+
+#figure(
+  table(
+    columns: 4,
+    stroke: none,
+
+    table.header[][Mean ][Std][Iterations],
+    [Constant step size], [0.2044], [0.4038], [500],
+    [Exact Line search], [0.5080], [1.6201], [493],
+    [Backtracking Line Search],[0.4163],[0.4932],[500],
+    [Barzilai-Borwein Step Size],[0.4286],[0.4950],[7],
+  ),
+  caption: [Time per iteration statistics (ms , tol =$10^(-8)$ , max_iter = $500$)],
+) <probe-a>
+
+#figure(
+  image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.png")
+)
+
+=== Projected Gradient descent with momentum
+
+We also confirmed our complexity result and we also see that in practice it works better than theoritically : 
+#figure(
+  image("../figures/ProjectedGD_momentum_true_iteration_complexity.png")
+)
+
+For the Gardient descent mometum with Nesterov which objectif is to be faster we also confirm our complexity result : 
+#figure(
+  image("../figures/Projected_Gradient_Descent_Momentum_Nesterov_true_iteration_complexity.png")
+)
+
+If we compare both method we clearly see that the Nesterov one is better in term of convergence toward objectif function : 
+#figure(
+  image("../figures/Comparison_Momentum_Methods_objectif_value.png")
+)
+
+=== Projected Randomized Coordinate Descent
+
+Here we clearly see that the algorithm does not match the expected theoretical result. Indeed for the 2 implementation we see that it has some trouble to converge towards to best objectif value.
+
+#figure(
+  image("../figures/Projected_Randomized_Coordinate_Descent_iteration_method_comparison_objective_gap.png")
+)
+
+== Comparison of the model : 
+Here we have decided to plot our bests version of every algorithm in the case of the smooth models. 
+
+#figure(
+  image("../figures/Projected_Methods_Comparison_Best_ones_objectif_value.png")
+)
+#figure(image(
+  "../figures/Projected_Methods_Comparison_Best_ones_comparison_computational_cost.png"
+))
+
+
+By looking at the graphes we see that the best methods is clearly the projected gradient with a adaptative step in term of objectif function. In term of time per iteration we see that the projected gradient with momentum achieve a better iteration mean but does a lot more iteration to reach the final objectif value so it is not worth. 
+
+ 
+
+#figure(
+  table(
+    columns: 4,
+    stroke: none,
+
+    table.header[][Mean ][Std][Iterations],
+    [Projected GD + Adaptive step], [0.2857], [0.4518], [7],
+    [PGD + Momentum], [0.2826], [0.4703], [811],
+    [PGD + Nesterov], [0.2531], [0.4449], [799],
+
+    [Randomized CD],[0.2901],[0.5484],[1000],
+  ),
+  caption: [Time per iteration statistics (ms , tol =$10^(-8)$ , max_iter = $1000$)],
+) <probe-a>
+
+
+Now we will interpet the effect of the parameters $lambda$ on the smooth Markowitz model with our best algorithm (i.e Projected gradient with adaptive step). 
+#figure(image("../figures/efficient_frontier_smooth.png"))
+#figure(image("../figures/lambda_convergence_gap.png"))
+
+From what we see on these plots, the efficient frontier has a concave curve. We can interpret that as higher return also mean higher risk which directly translate reality. 
+For initial values of $lambda in {0.1 , 0.5}$, we have a low-risk but also a low return, increasing the $lambda$ directly yields a bigger return but also a bigger risk. Indeed, the bigger the lambda is the more we try to maximise our return. From the Efficient frontier we see that we have a saturation effect from $lambda = {2}$ to $lambda = {20}$. In terms of convergences, we see that for bigger lambda, we converge faster which is due to the fact that the second terms becomes dominant and induce a steeper objectif landscape.
+
+
+
 
 What comparisons could you make between the different methods? Is it always a fair choice?
 

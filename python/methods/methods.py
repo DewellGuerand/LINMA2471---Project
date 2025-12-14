@@ -425,6 +425,7 @@ class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
         self.obj_value.append(model.f(w_new))
         
         t_start = time.time()
+        counter = 0
         for iter in range(self.max_iter):
             w_old = w_new.copy()
             
@@ -438,16 +439,17 @@ class ProjectedGradientDescentMomentum_Nesterov(OptimizationMethod):
             convergence_value = self.performance_indicator.evaluate(w_new, w_old, model)
             self.metric.append(convergence_value)
             
-            # if convergence_value < self.tol:
-            #     return {
-            #         "sol": w_new,
-            #         "value": model.f(w_new),
-            #         "iterations": iter + 1,
-            #         "converged": True,
-            #         "metric": self.metric,
-            #         "time": self.time,
-            #         "obj_value": self.obj_value,
-            #     }
+            if convergence_value < self.tol and counter >= 2:
+                return {
+                    "sol": w_new,
+                    "value": model.f(w_new),
+                    "iterations": iter + 1,
+                    "converged": True,
+                    "metric": self.metric,
+                    "time": self.time,
+                    "obj_value": self.obj_value,
+                }
+            counter +=1
 
         return {
             "sol": w_new,
