@@ -947,7 +947,19 @@ We then see that it converge in less iteration but an other time the time for ea
 
 === Long-step Path-following Interior-Point method 
 
-Finally, the Long-step Path-following Interior point method 
+Finally, the Long-step Path-following Interior point method. Here we have plotted the objectif function aswell as the time per iteration : 
+
+#figure(image(
+  "../figures/InteriorPoint_LongStep_objective_value.svg"
+
+),caption: [$f(x_k)$ vs iteration])
+
+#figure(image(
+  "../figures/InteriorPoint_LongStep_time_per_iteration.svg"
+
+),caption: [Time per iteration (ms) ])
+
+We can conlude that it converge in few iteration but the time per iteration is tremendeous in comparison with the other methods. 
 
 
 What comparisons could you make between the different methods? Is it always a fair choice?
