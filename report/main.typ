@@ -554,7 +554,7 @@ We now want to know for what sequence of $alpha_k$ the righthand side of @eq:sub
 
 #nonumeq(
   $
-    (R^2 + M^2 T alpha^2)/(2T alpha)
+    (D^2 + M^2 T alpha^2)/(2T alpha)
   $,
 )
 
@@ -562,11 +562,11 @@ which is minimized when $alpha = (R)/(M sqrt(T))$. With this step size, we now w
 
 #nonumeq(
   $
-    min_(k = 0, dots, T) f(x_i) - f^star <= (M R)/(sqrt(T(epsilon))) <= epsilon
+    min_(k = 0, dots, T) f(x_i) - f^star <= (M D)/(sqrt(T(epsilon))) <= epsilon
   $,
 )
 
-We therefore have that $T(epsilon) >= (M^2 R^2)/(epsilon^2) tilde cal(O)(1\/epsilon^2)$. Plugging that in the step size $alpha$:
+We therefore have that $T(epsilon) >= (M^2 D^2)/(epsilon^2) tilde cal(O)(1\/epsilon^2)$. Plugging that in the step size $alpha$:
 
 #nonumeq(
   $
@@ -797,7 +797,7 @@ The first experiment we performed was to compute the empirical number of iterati
 
  
 #figure(
-  image("../figures/Classical_Projected_Gradient_true_iteration_complexity.png", width: 90%),
+  image("../figures/Classical_Projected_Gradient_true_iteration_complexity.svg", width: 90%),
   caption: [Number of iterations vs. $epsilon$ for PGD]
 )<fig:PGD_iteration_complexity>
 
@@ -806,7 +806,7 @@ As we can see on @fig:PGD_iteration_complexity, the complexity of the PGD method
 Now as we have mentionned previously, we have tried several adaptative step sizes. Here are the results we obtained : 
 
 #figure(
-  image("../figures/Classical_Projected_Gradient_step_size_comparison_objectif_value.png", width: 90%),
+  image("../figures/Classical_Projected_Gradient_step_size_comparison_objectif_value.svg", width: 90%),
   caption: [Objective value $f(x_k)$ vs. $k$ for the different adaptative step sizes]
 )<fig:PGD_step_sizes>
 
@@ -814,7 +814,7 @@ From @fig:PGD_step_sizes, the adaptative step size method offering the best perf
 
 #figure(
   grid(
-    image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.png", width: 100%),
+    image("../figures/Classical_Projected_Gradient_step_size_comparison_comparison_computational_cost.svg", width: 100%),
     table(
       columns: 4,
       stroke: none,
@@ -895,6 +895,59 @@ From what we see on these plots, the efficient frontier has a concave curve. We 
 For initial values of $lambda in {0.1 , 0.5}$, we have a low-risk but also a low return, increasing the $lambda$ directly yields a bigger return but also a bigger risk. Indeed, the bigger the lambda is the more we try to maximise our return. From the Efficient frontier we see that we have a saturation effect from $lambda = {2}$ to $lambda = {20}$. In terms of convergences, we see that for bigger lambda, we converge faster which is due to the fact that the second terms becomes dominant and induce a steeper objectif landscape.
 
 
+== Non-Smooth model
+In this part of the numerical analysis we have first taken a constant $c=0.01$ and $lambda=0.5$ in order to compare our models.  
+=== Projected Subgradient descent
+Here we have plotted the error $||f(x_k) - f^*||$ in function of the iteration for different constant step that follow the upper bound previously computed. 
+
+#figure(
+  image("../figures/Subgradient_constant_stepsize_comparison_objective_gap.svg" ),
+  caption: [$||f(x_k) -f^*||$ vs iteration for several Constant Step $epsilon/M^2$]
+)
+
+As we can see on this graph, as expected we see that the algorithm manage to obtain $||f(x_k) - f^*|| < epsilon$ with a constant step size of $epsilon/M^2$ for a number of iteration $T(epsilon)$. We also plotted the complexity curve here to verify that we observe numerically a complexity of $cal(O)(epsilon^(-2))$ : 
+
+
+#figure(
+  image("../figures/Subgradient_constant_stepsize_comparison_objective_gap.svg" ),
+  caption: [Iterations vs precision($epsilon$) for the Projected Subgradient]
+)
+
+By looking at the graph, we can confirm that it is in practice better than what we had computed analytically.
+
+Then we also implemented an diminishing step size for the projected subgradient and we plotted the error with the correct objectif value : 
+#figure(
+  image("../figures/Subgradient_complexity_vs_epsilon.svg" ),
+  caption: [$||f(x_k) -f^*||$ vs iteration for several Constant Step $alpha$ (Tol :$10^(-6)$)]
+)
+From what we directly see, only two subgradient have converged. The one beginning with a initial step $alpha_0 = 0.01$ and the one with $0.001$. That come directly by the fact that their constant step size must be bigger than $epsilon/M^(2)$.
+
+=== Proximal gradient descent
+
+For the proximal descent, depsite using a constant step size of $1/L$ theoritically, we plotted$||f(x_k) -f^*||$ for several other step as with a constant step of $1/L$ our method was converging in 1 iteration and it was not interesting. 
+
+#figure(image(
+  "../figures/Proximal_Gradient_stepsize_comparison_objective_gap.svg"
+
+),caption: [$||f(x_k) -f^*||$ vs iteration for several step size ])
+
+We directly see that for any step size we converge swiftly toward equilibrium which make it for now the best method we have. 
+We also implemented the Fast Proximal gradient which also converge in 1 iteration so here is the comparison of the two objective function for a constant step size of $0.01$
+#figure(image(
+  "../figures/Proximal_Gradient_vs_Fast_objectif_value.svg"
+
+),caption: [$f(x_k)$ vs iteration for Fast and normal Proximal Gradient ])
+
+We then see that it converge in less iteration but an other time the time for each iteration can not be let a side as we can see on this graph : 
+#figure(image(
+  "../figures/Proximal_Gradient_vs_Fast_comparison_computational_cost.svg"
+
+),caption: [Time per iteration (ms) for Fast and normal Proximal Gradient ])
+
+
+=== Long-step Path-following Interior-Point method 
+
+Finally, the Long-step Path-following Interior point method 
 
 
 What comparisons could you make between the different methods? Is it always a fair choice?

@@ -304,6 +304,8 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
         plt.ylabel(r'$\|x_{k+1} - x_k\|$', fontsize=12)
     elif metric_used  == 'function':
         plt.ylabel(r'$f(x_{k+1}) - f(x_k)$', fontsize=12)
+    elif metric_used == 'function_with_ref':
+        plt.ylabel(r'$f(x_{k}) - f^*$', fontsize=12)
     else : 
         raise ValueError("metric must be 'iterate' or 'function'")
     plt.title('Convergence Metric Comparison', fontsize=13)
@@ -454,10 +456,8 @@ def plot_subgradient_complexity(model, w0, f_ref, M, epsilons, max_iter=100000,
     valid_epsilons = []
     
     print(f"=== Plot 2: Complexity vs precision ε ===")
-    print(f"Parameters: D = {D:.4f}, M = {M:.4f}")
     
     for eps in epsilons:
-        # Set step size α = ε/M²
         alpha = eps / (M**2)
         
         method = ProjectedSubgradientMethod({
@@ -469,7 +469,6 @@ def plot_subgradient_complexity(model, w0, f_ref, M, epsilons, max_iter=100000,
         
         result = method.optimize(model, w0.copy())
         
-        # Find first iteration where min_{k≤t} f(w_k) - f_ref ≤ ε
         if result['converged'] : 
             iterations_to_reach.append(result['iterations'])
             valid_epsilons.append(eps)
@@ -477,7 +476,6 @@ def plot_subgradient_complexity(model, w0, f_ref, M, epsilons, max_iter=100000,
     
     valid_epsilons = np.array(valid_epsilons)
     iterations_to_reach = np.array(iterations_to_reach)
-    # Create save directory if specified
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
     
