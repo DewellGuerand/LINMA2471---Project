@@ -59,7 +59,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_convergence_metric.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_convergence_metric.svg'), bbox_inches='tight' , format='svg')
     plt.show()
 
     # Plot 2: Objective value gap
@@ -78,7 +78,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_objective_gap.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_objective_gap.svg'), bbox_inches='tight', format='svg')
     plt.show()
     # Plot 4: Objective value 
     plt.figure(figsize=(8, 5))
@@ -94,7 +94,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_objective_value.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_objective_value.svg'), bbox_inches='tight', format='svg')
     plt.show()
 
     # Plot 3: Time per iteration
@@ -115,7 +115,7 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_time_per_iteration.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_time_per_iteration.svg'), bbox_inches='tight', format='svg')
     plt.show()
 
     # Summary stats
@@ -129,90 +129,143 @@ def plot_convergence(result, theoretical_rate_exp=-0.5, rate_label=r'$O(k^{-1/2}
 
 
 
-def measure_iteration_complexity(method_class, method_params, model, w0, tolerances, 
-                                  theoretical_exp=2, rate_label=r'$O(\epsilon^{-2})$',
-                                  method_name='method', save_dir=None, max_iter=10000 , metrics = None , f_ref = None):
+def measure_iteration_complexity(methods_config, model, w0, tolerances, 
+                                  theoretical_rates=None,
+                                  plot_name='method', save_dir=None, max_iter=10000, 
+                                  metrics=None, f_ref=None):
     """
     Measure iteration complexity by re-running optimization for each tolerance.
     
     This is the correct way to verify theoretical complexity bounds like O(epsilon^{-2}).
     
     Args:
-        method_class: The optimization method class (e.g., ProjectedGradientMethod)
-        method_params: Base parameters dict for the method (will be modified for each tol)
+        methods_config: List of tuples (method_class, method_params, label)
+            - method_class: The optimization method class (e.g., ProjectedGradientMethod)
+            - method_params: Base parameters dict for the method
+            - label: String label for the legend
         model: The optimization model
         w0: Initial point
         tolerances: List/array of tolerance values to test
-        theoretical_exp: Exponent for theoretical complexity (e.g., 2 for O(epsilon^{-2}))
-        rate_label: Label for the theoretical rate
-        method_name: Name for saving files
+        theoretical_rates: List of tuples (exponent, label, linestyle) for theoretical curves
+            e.g., [(2, r'$O(\epsilon^{-2})$', 'r--'), (1, r'$O(\epsilon^{-1})$', 'm:')]
+            If None, defaults to [(2, r'$O(\epsilon^{-2})$', 'r--')]
+        plot_name: Name for saving files
         save_dir: Directory to save figures
         max_iter: Maximum iterations allowed
+        metrics: 'iterate', 'function', or 'function_with_ref'
+        f_ref: Reference function value (needed if metrics='function_with_ref')
         
     Returns:
-        dict with 'tolerances' and 'iterations' arrays
-    """
-    from methods import IteratePerformanceIndicator, ValuePerformanceIndicator , ValuePerformanceIndicator_with_ref
-    
-    
-    iterations_list = []
-    valid_tolerances = []
-    
-    for tol in tolerances:
-        # Create method with this tolerance
-        params = method_params.copy()
-        params['tol'] = tol
-        params['max_iter'] = max_iter
-        if metrics == 'iterate': 
-            performance_indicator = IteratePerformanceIndicator()
-        elif metrics == 'function':
-            performance_indicator = ValuePerformanceIndicator()
-        elif metrics == 'function_with_ref':
-            performance_indicator = ValuePerformanceIndicator_with_ref(f_ref=f_ref)
-        else:
-            performance_indicator = IteratePerformanceIndicator()  # default
-        method = method_class(params, performance_indicator=performance_indicator)
-        result = method.optimize(model, w0.copy())
+        dict with method labels as keys and {'tolerances', 'iterations'} as values
         
-        if result['converged']:
-            iterations_list.append(result['iterations'])
-            valid_tolerances.append(tol)
-            print(f"  tol={tol:.2e}: {result['iterations']} iterations")
-        else:
-            print(f"  tol={tol:.2e}: did not converge in {max_iter} iterations")
+    Example:
+        measure_iteration_complexity(
+            methods_config=[
+                (ProjectedGradientMethod, {'step_size': ConstantStepSize(1/L)}, 'PGD Constant'),
+                (ProjectedGradientMethod, {'step_size': BarzilaiBorweinStepSize()}, 'PGD BB'),
+            ],
+            model=model, w0=w0, tolerances=tolerances,
+            theoretical_rates=[
+                (2, r'$O(\epsilon^{-2})$', 'r--'),
+                (1, r'$O(\epsilon^{-1})$', 'm:'),
+            ]
+        )
+    """
+    from methods import IteratePerformanceIndicator, ValuePerformanceIndicator, ValuePerformanceIndicator_with_ref
     
-    iterations_arr = np.array(iterations_list)
-    valid_tolerances = np.array(valid_tolerances)
+    # Default theoretical rate
+    if theoretical_rates is None:
+        theoretical_rates = [(2, r'$O(\epsilon^{-2})$', 'r--')]
     
-    if len(iterations_arr) == 0:
-        print("No valid data points.")
-        return None
+    colors = ['b', 'g', 'orange', 'purple', 'brown', 'pink', 'cyan', 'magenta']
+    markers = ['o', 's', '^', 'D', 'v', '<', '>', 'p']
+    
+    all_results = {}
     
     # Create save directory if specified
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
     
     # Plot
-    plt.figure(figsize=(8, 5))
-    plt.loglog(valid_tolerances, iterations_arr, 'bo-', linewidth=1.5, markersize=6, label='Empirical')
+    plt.figure(figsize=(10, 6))
     
-    # Fit theoretical curve
-    C = iterations_arr[0] * (valid_tolerances[0] ** theoretical_exp)
-    theoretical_iters = C * (valid_tolerances ** (-theoretical_exp))
-    plt.loglog(valid_tolerances, theoretical_iters, 'r--', linewidth=2, label=f'{rate_label} (theoretical)')
+    for idx, (method_class, method_params, label) in enumerate(methods_config):
+        print(f"\nMeasuring complexity for: {label}")
+        
+        iterations_list = []
+        valid_tolerances = []
+        
+        for tol in tolerances:
+            # Create method with this tolerance
+            params = method_params.copy()
+            params['tol'] = tol
+            params['max_iter'] = max_iter
+            
+            if metrics == 'iterate': 
+                performance_indicator = IteratePerformanceIndicator()
+            elif metrics == 'function':
+                performance_indicator = ValuePerformanceIndicator()
+            elif metrics == 'function_with_ref':
+                performance_indicator = ValuePerformanceIndicator_with_ref(f_ref=f_ref)
+            else:
+                performance_indicator = IteratePerformanceIndicator()  # default
+            
+            method = method_class(params, performance_indicator=performance_indicator)
+            result = method.optimize(model, w0.copy())
+            
+            if result['converged']:
+                iterations_list.append(result['iterations'])
+                valid_tolerances.append(tol)
+                print(f"  tol={tol:.2e}: {result['iterations']} iterations")
+            else:
+                print(f"  tol={tol:.2e}: did not converge in {max_iter} iterations")
+        
+        if len(iterations_list) == 0:
+            print(f"  No valid data points for {label}.")
+            continue
+        
+        iterations_arr = np.array(iterations_list)
+        valid_tol_arr = np.array(valid_tolerances)
+        
+        # Store results
+        all_results[label] = {'tolerances': valid_tol_arr, 'iterations': iterations_arr}
+        
+        # Plot empirical curve
+        color = colors[idx % len(colors)]
+        marker = markers[idx % len(markers)]
+        plt.loglog(valid_tol_arr, iterations_arr, f'{color}{marker}-', 
+                   linewidth=1.5, markersize=6, label=label)
+    
+    if len(all_results) == 0:
+        print("No valid data points for any method.")
+        return None
+    
+    # Plot theoretical curves (each matched to corresponding method color)
+    first_label = list(all_results.keys())[0]
+    first_tols = all_results[first_label]['tolerances']
+    first_iters = all_results[first_label]['iterations']
+    
+    for idx, (exp, rate_label, linestyle) in enumerate(theoretical_rates):
+        color = colors[idx % len(colors)]
+        C = first_iters[0] * (first_tols[0] ** exp)
+        theoretical_iters = C * (first_tols ** (-exp))
+        plt.loglog(first_tols, theoretical_iters, linestyle=linestyle, color=color, 
+                   linewidth=2, label=f'{rate_label} (theoretical)')
     
     plt.xlabel(r'Tolerance $\epsilon$', fontsize=12)
     plt.ylabel(r'Iterations $K(\epsilon)$', fontsize=12)
-    plt.title(f'Iteration Complexity', fontsize=13)
+    plt.title('Iteration Complexity Comparison', fontsize=13)
     plt.legend(fontsize=10)
     plt.grid(True, alpha=0.3, which='both')
     plt.gca().invert_xaxis()
     plt.tight_layout()
+    
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_true_iteration_complexity.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{plot_name}_true_iteration_complexity.svg'), 
+                    bbox_inches='tight', format='svg')
     plt.show()
     
-    return {'tolerances': valid_tolerances, 'iterations': iterations_arr}
+    return all_results
     
 
 def compare_methods(results_dict, save_dir=None , method_name='method' , metric_used='iterate',f_ref=None):
@@ -258,7 +311,7 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, 'comparison_convergence_metric.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, 'comparison_convergence_metric.svg'), bbox_inches='tight', format='svg')
     plt.show()
     
     # Plot 2: Objective value gap comparison
@@ -283,7 +336,7 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_objective_gap.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_objective_gap.svg'), bbox_inches='tight', format='svg')
     plt.show()
 
 
@@ -328,7 +381,7 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
     plt.grid(True, alpha=0.3, axis='y')
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_computational_cost.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_comparison_computational_cost.svg'), bbox_inches='tight', format='svg')
     plt.show()
     
     # Print detailed time statistics
@@ -368,7 +421,7 @@ def compare_methods(results_dict, save_dir=None , method_name='method' , metric_
     plt.grid(True, alpha=0.3, which='both')
     plt.tight_layout()
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_objectif_value.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_objectif_value.svg'), bbox_inches='tight', format='svg')
     plt.show()
     
 
@@ -428,15 +481,12 @@ def plot_subgradient_complexity(model, w0, f_ref, M, epsilons, max_iter=100000,
     if save_dir is not None:
         os.makedirs(save_dir, exist_ok=True)
     
-    # ========== Plot 2: Complexity vs precision ε ==========
     plt.figure(figsize=(10, 6))
     
     # Empirical
     plt.loglog(valid_epsilons, iterations_to_reach, 'bo-', linewidth=2, markersize=8,
                label='Empirical iterations')
     
-    # Theoretical: T ∝ 1/ε² - scaled to pass through first empirical point
-    # Scale factor: iterations_to_reach[0] / (1/valid_epsilons[0]²)
     scale_factor = iterations_to_reach[0] * (valid_epsilons[0]**2)
     theoretical_complexity = scale_factor / (valid_epsilons**2)
     plt.loglog(valid_epsilons, theoretical_complexity, 'r--', linewidth=2,
@@ -451,7 +501,7 @@ def plot_subgradient_complexity(model, w0, f_ref, M, epsilons, max_iter=100000,
     plt.tight_layout()
     
     if save_dir is not None:
-        plt.savefig(os.path.join(save_dir, f'{method_name}_complexity_vs_epsilon.png'), dpi=150, bbox_inches='tight')
+        plt.savefig(os.path.join(save_dir, f'{method_name}_complexity_vs_epsilon.svg'), bbox_inches='tight', format='svg')
     plt.show()
     
     return {'epsilons': valid_epsilons, 'iterations': iterations_to_reach}
